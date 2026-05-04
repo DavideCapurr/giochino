@@ -1,0 +1,171 @@
+#!/usr/bin/env bash
+
+set -euo pipefail
+
+interval="${AI_WATCH_INTERVAL:-2}"
+scheme="${AI_WATCH_SCHEME:-shiftblast}"
+device="${AI_WATCH_DEVICE:-booted}"
+dry_run=0
+status_only=0
+
+usage() {
+  echo "Usage: tools/ai-watch [--dry-run] [--status] [--interval seconds] [--device simctl-device]"
+  echo
+  echo "Watches Codex and Claude Code processes, then notifies Shift Blast in the iOS Simulator."
+}
+
+while [ "$#" -gt 0 ]; do
+  case "$1" in
+    --dry-run)
+      dry_run=1
+      shift
+      ;;
+    --status)
+      status_only=1
+      shift
+      ;;
+    --interval)
+      interval="${2:-}"
+      shift 2
+      ;;
+    --device)
+      device="${2:-}"
+      shift 2
+      ;;
+    -h|--help)
+      usage
+      exit 0
+      ;;
+    *)
+      echo "Unknown option: $1" >&2
+      usage >&2
+      exit 64
+      ;;
+  esac
+done
+
+if ! [[ "$interval" =~ ^[0-9]+([.][0-9]+)?$ ]]; then
+  echo "Invalid interval: $interval" >&2
+  exit 64
+fi
+
+label_for_name() {
+  local name="${1##*/}"
+  name="${name%.js}"
+  name="${name%.mjs}"
+  case "$name" in
+    codex|claude|claude-code)
+      echo "$name"
+      return 0
+      ;;
+  esac
+  return 1
+}
+
+is_ignored_command() {
+  local name="${1##*/}"
+  case "$name" in
+    ai-watch|sh|bash|zsh|fish|tcsh|osascript|awk|sed|grep|egrep|fgrep|rg|ps)
+      return 0
+      ;;
+  esac
+  return 1
+}
+
+list_ai_processes() {
+  if ! ps_output="$(ps -axo pid=,comm=,args= 2>/dev/null)"; then
+    echo "Unable to read the macOS process list. Grant Terminal permission or run outside a restricted sandbox." >&2
+    exit 69
+  fi
+
+  printf '%s\n' "$ps_output" | while read -r pid command args; do
+    [ -n "${pid:-}" ] || continue
+    [ "$pid" != "$$" ] || continue
+
+    if label="$(label_for_name "$command")"; then
+      printf '%s %s\n' "$pid" "$label"
+      continue
+    fi
+
+    if is_ignored_command "$command"; then
+      continue
+    fi
+
+    first_arg="${args%% *}"
+    if label="$(label_for_name "$first_arg")"; then
+      printf '%s %s\n' "$pid" "$label"
+      continue
+    fi
+
+    if [[ "$args" =~ (^|[[:space:]/])(codex|claude-code|claude)([[:space:]/._-]|$) ]]; then
+      printf '%s %s\n' "$pid" "${BASH_REMATCH[2]}"
+    fi
+  done
+}
+
+current_state() {
+  local rows labels label count
+  rows="$(list_ai_processes)"
+  count="$(printf '%s\n' "$rows" | awk 'NF { count += 1 } END { print count + 0 }')"
+  labels="$(
+    printf '%s\n' "$rows" \
+      | awk 'NF { seen[$2] = 1 } END { first = 1; for (label in seen) { if (!first) printf ","; printf "%s", label; first = 0 } }'
+  )"
+  [ -n "$labels" ] || labels="AI"
+  printf '%s %s\n' "$count" "$labels"
+}
+
+send_event() {
+  local event="$1"
+  local count="$2"
+  local label="$3"
+  local url="${scheme}://agent?event=${event}&label=${label}&count=${count}"
+
+  if [ "$event" = "finished" ]; then
+    url="${url}&exit=unknown"
+  fi
+
+  if [ "$dry_run" -eq 1 ]; then
+    echo "$url"
+    return 0
+  fi
+
+  if ! command -v xcrun >/dev/null 2>&1; then
+    echo "Unable to notify Shift Blast: xcrun is not available." >&2
+    exit 69
+  fi
+
+  if ! xcrun simctl openurl "$device" "$url" >/dev/null; then
+    echo "Unable to notify Shift Blast. Boot an iOS Simulator and launch the app once, then retry." >&2
+    echo "URL: $url" >&2
+    exit 69
+  fi
+}
+
+if [ "$status_only" -eq 1 ]; then
+  read -r count label < <(current_state)
+  echo "count=${count} label=${label}"
+  exit 0
+fi
+
+read -r previous_count previous_label < <(current_state)
+
+if [ "$previous_count" -gt 0 ]; then
+  send_event "started" "$previous_count" "$previous_label"
+fi
+
+echo "Watching Codex/Claude processes for Shift Blast. Press Ctrl-C to stop."
+
+while true; do
+  sleep "$interval"
+  read -r count label < <(current_state)
+
+  if [ "$previous_count" -eq 0 ] && [ "$count" -gt 0 ]; then
+    send_event "started" "$count" "$label"
+  elif [ "$previous_count" -gt 0 ] && [ "$count" -eq 0 ]; then
+    send_event "finished" "0" "$previous_label"
+  fi
+
+  previous_count="$count"
+  previous_label="$label"
+done

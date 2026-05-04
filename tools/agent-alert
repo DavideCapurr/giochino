@@ -1,0 +1,44 @@
+#!/usr/bin/env bash
+
+set +e
+
+if [ "$#" -eq 0 ]; then
+  echo "Usage: tools/agent-alert <command> [args...]"
+  echo "Example: tools/agent-alert xcodebuild -project ShiftBlast.xcodeproj -scheme ShiftBlast build"
+  exit 64
+fi
+
+started_at=$(date +%s)
+command_label="$*"
+
+"$@"
+status=$?
+
+finished_at=$(date +%s)
+elapsed=$((finished_at - started_at))
+
+if [ "$elapsed" -ge 60 ]; then
+  duration="$((elapsed / 60))m $((elapsed % 60))s"
+else
+  duration="${elapsed}s"
+fi
+
+if [ "$status" -eq 0 ]; then
+  title="Agent process finished"
+  message="OK in ${duration}: ${command_label}"
+  sound="Glass"
+else
+  title="Agent process failed"
+  message="Exit ${status} after ${duration}: ${command_label}"
+  sound="Basso"
+fi
+
+if command -v osascript >/dev/null 2>&1; then
+  osascript -e 'on run argv
+    display notification (item 2 of argv) with title (item 1 of argv) sound name (item 3 of argv)
+  end run' "$title" "$message" "$sound" >/dev/null 2>&1
+else
+  printf '\a'
+fi
+
+exit "$status"

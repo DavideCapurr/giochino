@@ -1,0 +1,61 @@
+{
+  "identifier" : "ShiftBlast.storekit",
+  "nonRenewingSubscriptions" : [
+
+  ],
+  "products" : [
+
+  ],
+  "settings" : {
+    "_failTransactionsEnabled" : false,
+    "_locale" : "en_US",
+    "_storefront" : "USA",
+    "_storeKitErrors" : [
+
+    ]
+  },
+  "subscriptionGroups" : [
+    {
+      "id" : "E9E092D8",
+      "localizations" : [
+        {
+          "description" : "Unlock agent assistant and remove ads.",
+          "displayName" : "Shift Blast Premium",
+          "locale" : "en_US"
+        }
+      ],
+      "name" : "Shift Blast Premium",
+      "subscriptions" : [
+        {
+          "adHocOffers" : [
+
+          ],
+          "codeOffers" : [
+
+          ],
+          "displayPrice" : "2.99",
+          "familyShareable" : false,
+          "groupNumber" : 1,
+          "internalID" : "E9E092D8-0001",
+          "introductoryOffer" : null,
+          "localizations" : [
+            {
+              "description" : "Unlock agent assistant and remove ads.",
+              "displayName" : "Shift Blast Premium",
+              "locale" : "en_US"
+            }
+          ],
+          "productID" : "com.shiftblast.premium.monthly",
+          "recurringSubscriptionPeriod" : "P1M",
+          "referenceName" : "Premium Monthly",
+          "subscriptionGroupID" : "E9E092D8",
+          "type" : "RecurringSubscription"
+        }
+      ]
+    }
+  ],
+  "version" : {
+    "major" : 4,
+    "minor" : 0
+  }
+}
