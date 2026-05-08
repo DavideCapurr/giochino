@@ -106,8 +106,8 @@ private struct BlockView: View {
     var body: some View {
         let baseColor = isClearing ? Color.white : block.tone.color
         let spawnPulse = CGFloat((sin(now.timeIntervalSinceReferenceDate * 16) + 1) / 2)
-        let primaryGlow = isSpawning ? 0.6 + spawnPulse * 0.22 : 0.55
-        let secondaryGlow = isSpawning ? 0.35 : 0.28
+        let primaryGlow = isSpawning ? 0.7 + spawnPulse * 0.25 : 0.18
+        let secondaryGlow = isSpawning ? 0.45 : 0.08
 
         RoundedRectangle(cornerRadius: 6, style: .continuous)
             .fill(
@@ -137,8 +137,8 @@ private struct BlockView: View {
                     )
                     .padding(2)
             }
-            .shadow(color: baseColor.opacity(primaryGlow), radius: isSpawning ? 14 : 8)
-            .shadow(color: baseColor.opacity(secondaryGlow), radius: isSpawning ? 26 : 18)
+            .shadow(color: baseColor.opacity(primaryGlow), radius: isSpawning ? 16 : 4)
+            .shadow(color: baseColor.opacity(secondaryGlow), radius: isSpawning ? 30 : 9)
     }
 }
 
