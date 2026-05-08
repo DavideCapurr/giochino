@@ -41,6 +41,7 @@
 		4AF945922FB0000000ED7248 /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = 4AF945932FB0000000ED7248 /* PrivacyInfo.xcprivacy */; };
 		4AF945942FB0000000ED7248 /* LegalLinks.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4AF945952FB0000000ED7248 /* LegalLinks.swift */; };
 		4AF945A02FB1000000ED7248 /* GameCenterService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4AF945A12FB1000000ED7248 /* GameCenterService.swift */; };
+		4AF945A22FB1000000ED7248 /* LeaderboardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4AF945A32FB1000000ED7248 /* LeaderboardView.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -93,6 +94,7 @@
 		4AF945932FB0000000ED7248 /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
 		4AF945952FB0000000ED7248 /* LegalLinks.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LegalLinks.swift; sourceTree = "<group>"; };
 		4AF945A12FB1000000ED7248 /* GameCenterService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GameCenterService.swift; sourceTree = "<group>"; };
+		4AF945A32FB1000000ED7248 /* LeaderboardView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LeaderboardView.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -156,6 +158,7 @@
 				0A000001000000000000010C /* AgentSignalWatcher.swift */,
 				0A0000010000000000000110 /* AgentBridge.swift */,
 				4AF945A12FB1000000ED7248 /* GameCenterService.swift */,
+				4AF945A32FB1000000ED7248 /* LeaderboardView.swift */,
 				0A000001000000000000010A /* Assets.xcassets */,
 			);
 			path = ShiftBlast;
@@ -348,6 +351,7 @@
 				0A000001000000000000000C /* AgentSignalWatcher.swift in Sources */,
 				0A0000010000000000000010 /* AgentBridge.swift in Sources */,
 				4AF945A02FB1000000ED7248 /* GameCenterService.swift in Sources */,
+				4AF945A22FB1000000ED7248 /* LeaderboardView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

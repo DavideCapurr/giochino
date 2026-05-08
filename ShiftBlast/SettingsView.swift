@@ -6,8 +6,10 @@ struct SettingsView: View {
     let dismiss: () -> Void
     let openPaywall: () -> Void
 
+    @EnvironmentObject var gameCenter: GameCenterService
     @Environment(\.openURL) private var openURL
     @State private var showRestartConfirm = false
+    @State private var isLeaderboardPresented = false
 
     var body: some View {
         ZStack {
@@ -33,12 +35,21 @@ struct SettingsView: View {
             }
         }
         .transition(.opacity)
+        .fullScreenCover(isPresented: $isLeaderboardPresented) {
+            LeaderboardView(
+                viewModel: viewModel,
+                gameCenter: gameCenter,
+                dismiss: { isLeaderboardPresented = false }
+            )
+        }
     }
 
     private var panelContent: some View {
         VStack(spacing: 16) {
             header
             soundSection
+            Divider().background(Color.white.opacity(0.08))
+            leaderboardSection
             Divider().background(Color.white.opacity(0.08))
             premiumSection
             Divider().background(Color.white.opacity(0.08))
@@ -48,6 +59,42 @@ struct SettingsView: View {
             Divider().background(Color.white.opacity(0.08))
             legalSection
             closeButton
+        }
+    }
+
+    // MARK: - Leaderboard
+
+    private var leaderboardSection: some View {
+        SettingsRow(
+            icon: "trophy.fill",
+            iconTint: .shiftYellow,
+            title: "LEADERBOARD",
+            subtitle: leaderboardSubtitle
+        ) {
+            Button {
+                isLeaderboardPresented = true
+            } label: {
+                Text("OPEN")
+                    .font(.system(size: 11, weight: .black, design: .rounded))
+                    .foregroundStyle(.black)
+                    .padding(.horizontal, 12)
+                    .padding(.vertical, 6)
+                    .background(Color.shiftYellow, in: Capsule())
+            }
+        }
+    }
+
+    private var leaderboardSubtitle: String {
+        switch gameCenter.authState {
+        case .authenticated:
+            if let rank = gameCenter.personalRank {
+                return "Your rank: #\(rank) global"
+            }
+            return "Personal & global · Game Center"
+        case .authenticating, .idle:
+            return "Signing in to Game Center…"
+        case .unavailable:
+            return "Personal · Game Center offline"
         }
     }
 
