@@ -624,7 +624,7 @@
 					INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.utilities";
 					MACOSX_DEPLOYMENT_TARGET = 14.0;
 					MARKETING_VERSION = 1.0;
-					PRODUCT_BUNDLE_IDENTIFIER = com.davide.shiftblast;
+					PRODUCT_BUNDLE_IDENTIFIER = com.davide.shiftblast.relay;
 					PRODUCT_NAME = "$(TARGET_NAME)";
 					SDKROOT = macosx;
 					SUPPORTED_PLATFORMS = macosx;
@@ -650,7 +650,7 @@
 					INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.utilities";
 					MACOSX_DEPLOYMENT_TARGET = 14.0;
 					MARKETING_VERSION = 1.0;
-					PRODUCT_BUNDLE_IDENTIFIER = com.davide.shiftblast;
+					PRODUCT_BUNDLE_IDENTIFIER = com.davide.shiftblast.relay;
 					PRODUCT_NAME = "$(TARGET_NAME)";
 					SDKROOT = macosx;
 					SUPPORTED_PLATFORMS = macosx;

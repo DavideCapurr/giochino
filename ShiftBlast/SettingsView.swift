@@ -1,4 +1,5 @@
 import SwiftUI
+import UserNotifications
 
 struct SettingsView: View {
     @ObservedObject var viewModel: GameViewModel
@@ -8,6 +9,7 @@ struct SettingsView: View {
 
     @EnvironmentObject var gameCenter: GameCenterService
     @Environment(\.openURL) private var openURL
+    @StateObject private var adMobConsent = AdMobConsentState.shared
     @State private var showRestartConfirm = false
     @State private var isLeaderboardPresented = false
 
@@ -35,6 +37,9 @@ struct SettingsView: View {
             }
         }
         .transition(.opacity)
+        .task {
+            await gameCenter.refreshNotificationSettings()
+        }
         .fullScreenCover(isPresented: $isLeaderboardPresented) {
             LeaderboardView(
                 viewModel: viewModel,
@@ -50,6 +55,7 @@ struct SettingsView: View {
             soundSection
             Divider().background(Color.white.opacity(0.08))
             leaderboardSection
+            friendAlertsSection
             Divider().background(Color.white.opacity(0.08))
             premiumSection
             Divider().background(Color.white.opacity(0.08))
@@ -96,6 +102,39 @@ struct SettingsView: View {
         case .unavailable:
             return "Personal · Game Center offline"
         }
+    }
+
+    private var friendAlertsSection: some View {
+        SettingsRow(
+            icon: gameCenter.friendAlertsEnabled ? "bell.badge.fill" : "bell.slash.fill",
+            iconTint: gameCenter.friendAlertsEnabled ? .shiftYellow : .white.opacity(0.28),
+            title: "FRIEND ALERTS",
+            subtitle: friendAlertsSubtitle
+        ) {
+            if gameCenter.friendAlertsAuthorizationStatus == .denied {
+                Button {
+                    gameCenter.openSystemSettings()
+                } label: {
+                    legalChip("SETTINGS")
+                }
+            } else {
+                Toggle("", isOn: Binding(
+                    get: { gameCenter.friendAlertsEnabled },
+                    set: { enabled in
+                        Task { await gameCenter.setFriendAlertsEnabled(enabled) }
+                    }
+                ))
+                .tint(Color.shiftCyan)
+                .labelsHidden()
+            }
+        }
+    }
+
+    private var friendAlertsSubtitle: String {
+        if gameCenter.friendAlertsAuthorizationStatus == .denied {
+            return "Blocked in iOS Settings"
+        }
+        return gameCenter.friendAlertsEnabled ? "On · friend leaderboard changes" : "Off · opt in to enable"
     }
 
     // MARK: - Header
@@ -294,6 +333,21 @@ struct SettingsView: View {
                     openURL(LegalLinks.termsURL)
                 } label: {
                     legalChip("OPEN")
+                }
+            }
+
+            if adMobConsent.isPrivacyOptionsRequired {
+                SettingsRow(
+                    icon: "hand.raised.fill",
+                    iconTint: .shiftYellow,
+                    title: "PRIVACY CHOICES",
+                    subtitle: "Manage ad consent"
+                ) {
+                    Button {
+                        Task { await adMobConsent.presentPrivacyOptions() }
+                    } label: {
+                        legalChip("MANAGE")
+                    }
                 }
             }
         }

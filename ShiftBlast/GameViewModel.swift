@@ -17,6 +17,7 @@ final class GameViewModel: ObservableObject {
     private weak var gameCenter: GameCenterService?
     private var runStartingBestScore = 0
     private var announcedRecordMilestones: Set<String> = []
+    private let mutePreferenceKey = "shiftblast.isMuted"
 
     @Published
     var state: GameState
@@ -45,6 +46,8 @@ final class GameViewModel: ObservableObject {
             store.save(state)
         }
         runStartingBestScore = state.bestScore
+        isMuted = UserDefaults.standard.bool(forKey: mutePreferenceKey)
+        feedback.isMuted = isMuted
         resumeInterruptedMoveIfNeeded()
     }
 
@@ -129,6 +132,7 @@ final class GameViewModel: ObservableObject {
     func toggleMute() {
         isMuted.toggle()
         feedback.isMuted = isMuted
+        UserDefaults.standard.set(isMuted, forKey: mutePreferenceKey)
     }
 
     private func updateAgentWatcher() {

@@ -32,11 +32,18 @@ final class GameCenterService: ObservableObject {
     @Published private(set) var globalTop: [GlobalLeaderboardEntry] = []
     @Published private(set) var friendsTop: [GlobalLeaderboardEntry] = []
     @Published private(set) var lastError: String?
+    @Published private(set) var friendAlertsEnabled: Bool
+    @Published private(set) var friendAlertsAuthorizationStatus: UNAuthorizationStatus = .notDetermined
     @Published var isLoadingGlobal = false
 
     private var pendingSubmissions: [Int] = []
     private let notificationCenter = UNUserNotificationCenter.current()
+    private let friendAlertsEnabledKey = "shiftblast.friend-alerts-enabled"
     private let friendOvertakeNotificationKey = "shiftblast.friend-overtake-notification"
+
+    init() {
+        friendAlertsEnabled = UserDefaults.standard.bool(forKey: friendAlertsEnabledKey)
+    }
 
     func authenticate(force: Bool = false) {
         if !force {
@@ -78,7 +85,45 @@ final class GameCenterService: ObservableObject {
         UIApplication.shared.open(url)
     }
 
-    func requestNotificationPermissionIfNeeded() async {
+    func refreshNotificationSettings() async {
+        let settings = await notificationCenter.notificationSettings()
+        friendAlertsAuthorizationStatus = settings.authorizationStatus
+    }
+
+    func setFriendAlertsEnabled(_ enabled: Bool) async {
+        if !enabled {
+            friendAlertsEnabled = false
+            UserDefaults.standard.set(false, forKey: friendAlertsEnabledKey)
+            return
+        }
+
+        await refreshNotificationSettings()
+        switch friendAlertsAuthorizationStatus {
+        case .notDetermined:
+            await requestNotificationPermissionIfNeeded()
+            await refreshNotificationSettings()
+            guard friendAlertsAuthorizationStatus.allowsLocalDelivery else {
+                friendAlertsEnabled = false
+                UserDefaults.standard.set(false, forKey: friendAlertsEnabledKey)
+                return
+            }
+        case .authorized, .provisional, .ephemeral:
+            break
+        case .denied:
+            friendAlertsEnabled = false
+            UserDefaults.standard.set(false, forKey: friendAlertsEnabledKey)
+            return
+        @unknown default:
+            friendAlertsEnabled = false
+            UserDefaults.standard.set(false, forKey: friendAlertsEnabledKey)
+            return
+        }
+
+        friendAlertsEnabled = true
+        UserDefaults.standard.set(true, forKey: friendAlertsEnabledKey)
+    }
+
+    private func requestNotificationPermissionIfNeeded() async {
         let settings = await notificationCenter.notificationSettings()
         guard settings.authorizationStatus == .notDetermined else { return }
 
@@ -191,6 +236,7 @@ final class GameCenterService: ObservableObject {
     }
 
     private func notifyIfFriendMovedAhead() async {
+        guard friendAlertsEnabled else { return }
         guard let personalBest, personalBest > 0 else { return }
         guard let friend = friendsTop
             .filter({ !$0.isLocalPlayer && $0.score > personalBest })
@@ -199,21 +245,11 @@ final class GameCenterService: ObservableObject {
 
         let notificationKey = "\(friend.id):\(friend.score):\(personalBest)"
         guard UserDefaults.standard.string(forKey: friendOvertakeNotificationKey) != notificationKey else { return }
-        UserDefaults.standard.set(notificationKey, forKey: friendOvertakeNotificationKey)
 
         let settings = await notificationCenter.notificationSettings()
-        switch settings.authorizationStatus {
-        case .notDetermined:
-            await requestNotificationPermissionIfNeeded()
-            let updatedStatus = await notificationCenter.notificationSettings().authorizationStatus
-            guard updatedStatus == .authorized || updatedStatus == .provisional || updatedStatus == .ephemeral else { return }
-        case .authorized, .provisional, .ephemeral:
-            break
-        case .denied:
-            return
-        @unknown default:
-            return
-        }
+        friendAlertsAuthorizationStatus = settings.authorizationStatus
+        guard settings.authorizationStatus.allowsLocalDelivery else { return }
+        UserDefaults.standard.set(notificationKey, forKey: friendOvertakeNotificationKey)
 
         let content = UNMutableNotificationContent()
         content.title = "Friend pulled ahead"
@@ -247,5 +283,18 @@ final class GameCenterService: ObservableObject {
             presenter = presented
         }
         presenter.present(viewController, animated: true)
+    }
+}
+
+private extension UNAuthorizationStatus {
+    var allowsLocalDelivery: Bool {
+        switch self {
+        case .authorized, .provisional, .ephemeral:
+            return true
+        case .notDetermined, .denied:
+            return false
+        @unknown default:
+            return false
+        }
     }
 }

@@ -14,7 +14,6 @@ struct ShiftBlastApp: App {
                 .environmentObject(gameCenter)
                 .task {
                     await subscriptionStore.configure()
-                    await gameCenter.requestNotificationPermissionIfNeeded()
                     gameCenter.authenticate()
                     viewModel.bindGameCenter(gameCenter)
                 }

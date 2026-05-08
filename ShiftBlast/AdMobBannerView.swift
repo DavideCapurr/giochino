@@ -20,6 +20,33 @@ enum AdMobConfiguration {
     }
 }
 
+@MainActor
+final class AdMobConsentState: ObservableObject {
+    static let shared = AdMobConsentState()
+
+    @Published private(set) var privacyOptionsRequirementStatus: PrivacyOptionsRequirementStatus = ConsentInformation.shared.privacyOptionsRequirementStatus
+    @Published private(set) var lastError: String?
+
+    var isPrivacyOptionsRequired: Bool {
+        privacyOptionsRequirementStatus == .required
+    }
+
+    func refresh() {
+        privacyOptionsRequirementStatus = ConsentInformation.shared.privacyOptionsRequirementStatus
+    }
+
+    func presentPrivacyOptions() async {
+        guard isPrivacyOptionsRequired else { return }
+        do {
+            try await ConsentForm.presentPrivacyOptionsForm(from: UIApplication.shared.adMobTopViewController())
+            lastError = nil
+        } catch {
+            lastError = error.localizedDescription
+        }
+        refresh()
+    }
+}
+
 struct AdMobBannerView: View {
     let width: CGFloat
 
@@ -77,9 +104,12 @@ private final class BannerCoordinator: NSObject, BannerViewDelegate {
 
 @MainActor
 private enum AdMobStartup {
+    private static var didConfigureMobileAds = false
     private static var didStartMobileAds = false
 
     static func prepareForAdRequests(from viewController: UIViewController?) async -> Bool {
+        configureMobileAdsIfNeeded()
+
         if !AdMobConfiguration.usesTestAds {
             await gatherConsent(from: viewController)
             guard ConsentInformation.shared.canRequestAds else {
@@ -88,9 +118,9 @@ private enum AdMobStartup {
                 #endif
                 return false
             }
-        }
 
-        await TrackingAuthorization.requestIfNeeded()
+            await TrackingAuthorization.requestIfNeeded()
+        }
 
         if !didStartMobileAds {
             await MobileAds.shared.start()
@@ -100,13 +130,21 @@ private enum AdMobStartup {
         return true
     }
 
+    private static func configureMobileAdsIfNeeded() {
+        guard !didConfigureMobileAds else { return }
+        MobileAds.shared.requestConfiguration.setPublisherFirstPartyIDEnabled(false)
+        didConfigureMobileAds = true
+    }
+
     private static func gatherConsent(from viewController: UIViewController?) async {
         let parameters = RequestParameters()
 
         do {
             try await ConsentInformation.shared.requestConsentInfoUpdate(with: parameters)
             try await ConsentForm.loadAndPresentIfRequired(from: viewController)
+            AdMobConsentState.shared.refresh()
         } catch {
+            AdMobConsentState.shared.refresh()
             #if DEBUG
             print("AdMob consent flow error: \(error.localizedDescription)")
             #endif

@@ -20,9 +20,11 @@
 
 <h2>Information we collect</h2>
 <ul>
-  <li><strong>Game data stored on device.</strong> Game state, best score, sound preference and other settings are stored locally on your device using <code>UserDefaults</code> and (when iCloud is available) iCloud key-value storage. We do not have access to this data.</li>
+  <li><strong>Game data stored on device.</strong> Game state, best score, leaderboard entries, sound preference and other settings are stored locally on your device using app storage and <code>UserDefaults</code>. We do not have access to this data.</li>
+  <li><strong>Game Center data.</strong> If you sign in to Game Center, Apple processes your display name, leaderboard scores, ranks and friend leaderboard information. ShiftBlast uses this only to submit scores and show leaderboards in the app.</li>
   <li><strong>Subscription status.</strong> When you purchase a subscription, the transaction is processed by Apple. We receive only the information needed to verify your entitlement (transaction ID, product ID, purchase date) via Apple's StoreKit framework.</li>
   <li><strong>Advertising identifiers.</strong> If you grant tracking permission via the App Tracking Transparency prompt, the Google Mobile Ads SDK may access your device's advertising identifier (IDFA) to deliver personalized ads. If you decline, only non-personalized ads are shown.</li>
+  <li><strong>AI relay signal.</strong> If you enable the optional premium AI agent connection, ShiftBlast and the macOS relay use your iCloud container to write a small sentinel file that tells the game when an agent response has finished. We do not operate a server for this feature.</li>
   <li><strong>Diagnostic data.</strong> Standard crash and performance data may be collected by Apple if you have enabled sharing in iOS Settings.</li>
 </ul>
 
@@ -41,6 +43,8 @@
 <h2>Your choices</h2>
 <ul>
   <li>Decline tracking via the ATT prompt or change it in iOS Settings.</li>
+  <li>Use the in-app privacy choices control when available to update ad consent choices.</li>
+  <li>Turn Friend Alerts on or off in Settings. ShiftBlast asks for notification permission only when you enable this alert feature.</li>
   <li>Manage or cancel your subscription in <em>Settings → Apple ID → Subscriptions</em>.</li>
   <li>Delete the app to remove all locally stored game data.</li>
 </ul>

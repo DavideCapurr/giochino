@@ -86,9 +86,10 @@ struct PaywallView: View {
                     .font(.system(size: 14, weight: .bold, design: .rounded))
                     .foregroundStyle(.white.opacity(0.55))
 
-                Text("Auto-renews monthly. Cancel anytime.")
+                Text("3-day free trial for eligible new subscribers, then auto-renews monthly. Cancel anytime.")
                     .font(.system(size: 12, weight: .semibold, design: .rounded))
                     .foregroundStyle(.white.opacity(0.4))
+                    .multilineTextAlignment(.center)
                     .padding(.top, 2)
             } else if subscriptionStore.didFinishLoadingProducts {
                 Image(systemName: "wifi.exclamationmark")
@@ -177,7 +178,7 @@ struct PaywallView: View {
     // MARK: - Legal Disclosure
 
     private var legalDisclosure: some View {
-        Text("Payment will be charged to your Apple ID account at confirmation of purchase. The subscription automatically renews unless it is canceled at least 24 hours before the end of the current period. Your account will be charged for renewal within 24 hours prior to the end of the current period. You can manage and cancel your subscriptions by going to your App Store account settings after purchase.")
+        Text("Eligible new subscribers receive a 3-day free trial. Payment will be charged to your Apple ID account at confirmation of purchase or when the trial ends. The subscription automatically renews unless it is canceled at least 24 hours before the end of the current period. Your account will be charged for renewal within 24 hours prior to the end of the current period. You can manage and cancel your subscriptions by going to your App Store account settings after purchase.")
             .font(.system(size: 10, weight: .regular))
             .foregroundStyle(.white.opacity(0.3))
             .multilineTextAlignment(.center)
@@ -209,8 +210,8 @@ struct PaywallView: View {
         case .purchasing:
             return "Subscribing..."
         default:
-            if let product = subscriptionStore.premiumProduct {
-                return "Subscribe for \(product.displayPrice)/mo"
+            if subscriptionStore.premiumProduct != nil {
+                return "Start Free Trial"
             }
             return "Subscribe"
         }
@@ -250,4 +251,3 @@ enum PaywallConstants {
     static let privacyURL = LegalLinks.privacyURL
     static let manageSubscriptionURL = LegalLinks.manageSubscriptionURL
 }
-
