@@ -15,7 +15,7 @@ struct ShiftBlastApp: App {
                 .environmentObject(gameCenter)
                 .task {
                     await TrackingAuthorization.requestIfNeeded()
-                    MobileAds.shared.start()
+                    await MobileAds.shared.start()
                     await subscriptionStore.configure()
                     gameCenter.authenticate()
                     viewModel.bindGameCenter(gameCenter)

@@ -10,12 +10,8 @@ enum AdMobConfiguration {
         #if DEBUG
         testBannerAdUnitID
         #else
-        isRunningFromTestFlight ? testBannerAdUnitID : productionBannerAdUnitID
+        productionBannerAdUnitID
         #endif
-    }
-
-    private static var isRunningFromTestFlight: Bool {
-        Bundle.main.appStoreReceiptURL?.lastPathComponent == "sandboxReceipt"
     }
 }
 
@@ -23,7 +19,7 @@ struct AdMobBannerView: View {
     let width: CGFloat
 
     private var adSize: AdSize {
-        portraitAnchoredAdaptiveBanner(width: max(320, width))
+        largePortraitAnchoredAdaptiveBanner(width: max(320, width))
     }
 
     var body: some View {
@@ -44,7 +40,7 @@ private struct BannerViewContainer: UIViewRepresentable {
         banner.delegate = context.coordinator
         Task { @MainActor in
             await TrackingAuthorization.requestIfNeeded()
-            MobileAds.shared.start()
+            await MobileAds.shared.start()
             banner.load(Request())
         }
         return banner

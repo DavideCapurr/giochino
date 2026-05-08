@@ -254,23 +254,17 @@ enum GameEngine {
     }
 
     static func incomingBlockPreview(forXP xp: Double) -> String {
-        incomingBlockPreview(forXP: xp, emptyCellCount: Int.max)
+        let range = incomingBlockRange(forXP: xp)
+        if range.lowerBound == range.upperBound {
+            return "\(range.upperBound)"
+        }
+        return "\(range.lowerBound)-\(range.upperBound)"
     }
 
     static func incomingBlockPreview(forXP xp: Double, emptyCellCount: Int) -> String {
         guard emptyCellCount > 0 else { return "0" }
 
-        let baseRange: ClosedRange<Int>
-        switch xp {
-        case ..<1.15:
-            baseRange = 2...3
-        case ..<1.35:
-            baseRange = 2...2
-        case ..<1.7:
-            baseRange = 1...2
-        default:
-            baseRange = 1...1
-        }
+        let baseRange = incomingBlockRange(forXP: xp)
 
         let pressureCap: Int
         switch emptyCellCount {
@@ -309,7 +303,7 @@ enum GameEngine {
 
     static func pulseDrain(forDifficulty difficulty: Double, rng: inout SeededGenerator) -> Int {
         let base = min(18, 6 + Int((max(1, difficulty) - 1) * 1.5))
-        let jitter = rng.nextInt(in: -2..<3)
+        let jitter = difficulty < 1.2 ? 0 : rng.nextInt(in: -2..<3)
         return max(3, base + jitter)
     }
 
@@ -406,11 +400,16 @@ enum GameEngine {
     }
 
     static func clearCompletedLines(in state: inout GameState) -> (lines: [ClearedLine], blockIDs: Set<UUID>, scoreDelta: Int) {
+        let occupied = Set(state.blocks.map(\.position))
         let rows = (0..<state.boardSize).filter { row in
-            state.blocks.filter { $0.position.row == row }.count == state.boardSize
+            (0..<state.boardSize).allSatisfy { column in
+                occupied.contains(GridPoint(row: row, column: column))
+            }
         }
         let columns = (0..<state.boardSize).filter { column in
-            state.blocks.filter { $0.position.column == column }.count == state.boardSize
+            (0..<state.boardSize).allSatisfy { row in
+                occupied.contains(GridPoint(row: row, column: column))
+            }
         }
 
         let lines = rows.map(ClearedLine.row) + columns.map(ClearedLine.column)
@@ -502,8 +501,29 @@ enum GameEngine {
         state.tier = tier(forScore: state.score, moves: state.moves)
 
         let summary = OverdriveSummary(clearedCount: blockCount, line: target, scoreDelta: delta)
+        state.blocks.removeAll { block in
+            switch target {
+            case .row(let row):
+                return block.position.row == row
+            case .column(let column):
+                return block.position.column == column
+            }
+        }
         state.lastOverdrive = summary
         return summary
+    }
+
+    private static func incomingBlockRange(forXP xp: Double) -> ClosedRange<Int> {
+        switch xp {
+        case ..<1.15:
+            return 2...3
+        case ..<1.35:
+            return 2...2
+        case ..<1.7:
+            return 1...2
+        default:
+            return 1...1
+        }
     }
 
     private static func densestLine(in state: GameState) -> ClearedLine? {
