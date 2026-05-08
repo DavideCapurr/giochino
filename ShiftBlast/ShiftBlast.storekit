@@ -19,7 +19,7 @@
       "id" : "E9E092D8",
       "localizations" : [
         {
-          "description" : "Unlock the full experience.",
+          "description" : "Remove ads and unlock AI features.",
           "displayName" : "Shift Blast Premium",
           "locale" : "en_US"
         }
@@ -37,11 +37,17 @@
           "familyShareable" : false,
           "groupNumber" : 1,
           "internalID" : "E9E092D8-0001",
-          "introductoryOffer" : null,
+          "introductoryOffer" : {
+            "displayPrice" : "0.00",
+            "internalID" : "E9E092D8-0001-INTRO",
+            "numberOfPeriods" : 1,
+            "paymentMode" : "free",
+            "subscriptionPeriod" : "P3D"
+          },
           "localizations" : [
             {
-              "description" : "Unlock the full experience.",
-              "displayName" : "Shift Blast Premium",
+              "description" : "Remove ads and unlock AI features.",
+              "displayName" : "Premium Monthly",
               "locale" : "en_US"
             }
           ],

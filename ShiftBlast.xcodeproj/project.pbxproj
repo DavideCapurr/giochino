@@ -18,7 +18,36 @@
 		0A0000010000000000000009 /* FeedbackPlayer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000010000000000000109 /* FeedbackPlayer.swift */; };
 		0A000001000000000000000A /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 0A000001000000000000010A /* Assets.xcassets */; };
 		0A000001000000000000000B /* GameEngineTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A000001000000000000010B /* GameEngineTests.swift */; };
+		0A000001000000000000000C /* AgentSignalWatcher.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A000001000000000000010C /* AgentSignalWatcher.swift */; };
+		0A000001000000000000000E /* GameViewModelTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A000001000000000000010E /* GameViewModelTests.swift */; };
+		0A0000010000000000000010 /* AgentBridge.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000010000000000000110 /* AgentBridge.swift */; };
+		0A0000010000000000000011 /* AgentBridgeTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000010000000000000111 /* AgentBridgeTests.swift */; };
+		0A0000020000000000000010 /* RelayApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000020000000000000110 /* RelayApp.swift */; };
+		0A0000020000000000000011 /* RelayCoordinator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000020000000000000111 /* RelayCoordinator.swift */; };
+		0A0000020000000000000012 /* RelayMenuView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000020000000000000112 /* RelayMenuView.swift */; };
+		0A0000020000000000000013 /* ProcessWatcher.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000020000000000000113 /* ProcessWatcher.swift */; };
+		0A0000020000000000000014 /* SessionFileWatcher.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000020000000000000114 /* SessionFileWatcher.swift */; };
+		0A0000020000000000000015 /* BookmarkStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000020000000000000115 /* BookmarkStore.swift */; };
+		0A0000020000000000000016 /* SentinelWriter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000020000000000000116 /* SentinelWriter.swift */; };
+		0A0000020000000000000017 /* LoginItemManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000020000000000000117 /* LoginItemManager.swift */; };
+		0A0000020000000000000018 /* AgentNames.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000020000000000000118 /* AgentNames.swift */; };
+		4AF945822FA93CFC00ED7248 /* PaywallView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4AF945802FA93CFC00ED7248 /* PaywallView.swift */; };
+		4AF945832FA93CFC00ED7248 /* SubscriptionStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4AF945812FA93CFC00ED7248 /* SubscriptionStore.swift */; };
+		4AF945852FA93D4700ED7248 /* ShiftBlast.storekit in Resources */ = {isa = PBXBuildFile; fileRef = 4AF945842FA93D4700ED7248 /* ShiftBlast.storekit */; };
+		4AF945872FA93DF300ED7248 /* AdMobBannerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4AF945862FA93DF300ED7248 /* AdMobBannerView.swift */; };
+		4AF9458A2FA93E6C00ED7248 /* GoogleMobileAds in Frameworks */ = {isa = PBXBuildFile; productRef = 4AF945892FA93E6C00ED7248 /* GoogleMobileAds */; };
+		4AF9458B2FA9400000ED7248 /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4AF9458C2FA9400000ED7248 /* SettingsView.swift */; };
 /* End PBXBuildFile section */
+
+/* Begin PBXContainerItemProxy section */
+		0A0000010000000000000802 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 0A0000010000000000000901 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 0A0000010000000000000401;
+			remoteInfo = ShiftBlast;
+		};
+/* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
 		0A00000100000000000000A1 /* ShiftBlast.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = ShiftBlast.app; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -34,11 +63,53 @@
 		0A0000010000000000000109 /* FeedbackPlayer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FeedbackPlayer.swift; sourceTree = "<group>"; };
 		0A000001000000000000010A /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		0A000001000000000000010B /* GameEngineTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GameEngineTests.swift; sourceTree = "<group>"; };
+		0A000001000000000000010C /* AgentSignalWatcher.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AgentSignalWatcher.swift; sourceTree = "<group>"; };
+		0A000001000000000000010E /* GameViewModelTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GameViewModelTests.swift; sourceTree = "<group>"; };
+		0A0000010000000000000110 /* AgentBridge.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AgentBridge.swift; sourceTree = "<group>"; };
+		0A0000010000000000000111 /* AgentBridgeTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AgentBridgeTests.swift; sourceTree = "<group>"; };
+		0A00000200000000000000A1 /* ShiftBlastRelay.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = ShiftBlastRelay.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		0A0000020000000000000104 /* ShiftBlastRelay.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = ShiftBlastRelay.entitlements; sourceTree = "<group>"; };
+		0A0000020000000000000110 /* RelayApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RelayApp.swift; sourceTree = "<group>"; };
+		0A0000020000000000000111 /* RelayCoordinator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RelayCoordinator.swift; sourceTree = "<group>"; };
+		0A0000020000000000000112 /* RelayMenuView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RelayMenuView.swift; sourceTree = "<group>"; };
+		0A0000020000000000000113 /* ProcessWatcher.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProcessWatcher.swift; sourceTree = "<group>"; };
+		0A0000020000000000000114 /* SessionFileWatcher.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SessionFileWatcher.swift; sourceTree = "<group>"; };
+		0A0000020000000000000115 /* BookmarkStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BookmarkStore.swift; sourceTree = "<group>"; };
+		0A0000020000000000000116 /* SentinelWriter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SentinelWriter.swift; sourceTree = "<group>"; };
+		0A0000020000000000000117 /* LoginItemManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LoginItemManager.swift; sourceTree = "<group>"; };
+		0A0000020000000000000118 /* AgentNames.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AgentNames.swift; sourceTree = "<group>"; };
+		4A32BBB62FA16BB300EAC0E5 /* ShiftBlast.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = ShiftBlast.entitlements; sourceTree = "<group>"; };
+		4AF945802FA93CFC00ED7248 /* PaywallView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PaywallView.swift; sourceTree = "<group>"; };
+		4AF945812FA93CFC00ED7248 /* SubscriptionStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SubscriptionStore.swift; sourceTree = "<group>"; };
+		4AF945842FA93D4700ED7248 /* ShiftBlast.storekit */ = {isa = PBXFileReference; lastKnownFileType = text; path = ShiftBlast.storekit; sourceTree = "<group>"; };
+		4AF945862FA93DF300ED7248 /* AdMobBannerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AdMobBannerView.swift; sourceTree = "<group>"; };
+		4AF9458B2FA93F7E00ED7248 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
+		4AF9458C2FA9400000ED7248 /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
-		0A0000010000000000000201 /* Frameworks */ = {isa = PBXFrameworksBuildPhase; buildActionMask = 2147483647; files = (); runOnlyForDeploymentPostprocessing = 0; };
-		0A0000010000000000000202 /* Frameworks */ = {isa = PBXFrameworksBuildPhase; buildActionMask = 2147483647; files = (); runOnlyForDeploymentPostprocessing = 0; };
+		0A0000010000000000000201 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				4AF9458A2FA93E6C00ED7248 /* GoogleMobileAds in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		0A0000010000000000000202 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		0A0000020000000000000201 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
@@ -46,6 +117,7 @@
 			isa = PBXGroup;
 			children = (
 				0A0000010000000000000302 /* ShiftBlast */,
+				0A0000020000000000000301 /* ShiftBlastRelay */,
 				0A0000010000000000000303 /* ShiftBlastTests */,
 				0A0000010000000000000304 /* Products */,
 			);
@@ -54,6 +126,13 @@
 		0A0000010000000000000302 /* ShiftBlast */ = {
 			isa = PBXGroup;
 			children = (
+				4AF9458B2FA93F7E00ED7248 /* Info.plist */,
+				4AF945862FA93DF300ED7248 /* AdMobBannerView.swift */,
+				4AF945842FA93D4700ED7248 /* ShiftBlast.storekit */,
+				4AF945802FA93CFC00ED7248 /* PaywallView.swift */,
+				4AF9458C2FA9400000ED7248 /* SettingsView.swift */,
+				4AF945812FA93CFC00ED7248 /* SubscriptionStore.swift */,
+				4A32BBB62FA16BB300EAC0E5 /* ShiftBlast.entitlements */,
 				0A0000010000000000000101 /* ShiftBlastApp.swift */,
 				0A0000010000000000000102 /* GameModels.swift */,
 				0A0000010000000000000103 /* SeededGenerator.swift */,
@@ -63,6 +142,8 @@
 				0A0000010000000000000107 /* ContentView.swift */,
 				0A0000010000000000000108 /* BoardView.swift */,
 				0A0000010000000000000109 /* FeedbackPlayer.swift */,
+				0A000001000000000000010C /* AgentSignalWatcher.swift */,
+				0A0000010000000000000110 /* AgentBridge.swift */,
 				0A000001000000000000010A /* Assets.xcassets */,
 			);
 			path = ShiftBlast;
@@ -72,6 +153,8 @@
 			isa = PBXGroup;
 			children = (
 				0A000001000000000000010B /* GameEngineTests.swift */,
+				0A000001000000000000010E /* GameViewModelTests.swift */,
+				0A0000010000000000000111 /* AgentBridgeTests.swift */,
 			);
 			path = ShiftBlastTests;
 			sourceTree = "<group>";
@@ -81,8 +164,26 @@
 			children = (
 				0A00000100000000000000A1 /* ShiftBlast.app */,
 				0A00000100000000000000A2 /* ShiftBlastTests.xctest */,
+				0A00000200000000000000A1 /* ShiftBlastRelay.app */,
 			);
 			name = Products;
+			sourceTree = "<group>";
+		};
+		0A0000020000000000000301 /* ShiftBlastRelay */ = {
+			isa = PBXGroup;
+			children = (
+				0A0000020000000000000104 /* ShiftBlastRelay.entitlements */,
+				0A0000020000000000000110 /* RelayApp.swift */,
+				0A0000020000000000000111 /* RelayCoordinator.swift */,
+				0A0000020000000000000112 /* RelayMenuView.swift */,
+				0A0000020000000000000113 /* ProcessWatcher.swift */,
+				0A0000020000000000000114 /* SessionFileWatcher.swift */,
+				0A0000020000000000000115 /* BookmarkStore.swift */,
+				0A0000020000000000000116 /* SentinelWriter.swift */,
+				0A0000020000000000000117 /* LoginItemManager.swift */,
+				0A0000020000000000000118 /* AgentNames.swift */,
+			);
+			path = ShiftBlastRelay;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -96,8 +197,10 @@
 				0A0000010000000000000201 /* Frameworks */,
 				0A0000010000000000000601 /* Resources */,
 			);
-			buildRules = ();
-			dependencies = ();
+			buildRules = (
+			);
+			dependencies = (
+			);
 			name = ShiftBlast;
 			productName = ShiftBlast;
 			productReference = 0A00000100000000000000A1 /* ShiftBlast.app */;
@@ -111,7 +214,8 @@
 				0A0000010000000000000202 /* Frameworks */,
 				0A0000010000000000000602 /* Resources */,
 			);
-			buildRules = ();
+			buildRules = (
+			);
 			dependencies = (
 				0A0000010000000000000801 /* PBXTargetDependency */,
 			);
@@ -119,6 +223,23 @@
 			productName = ShiftBlastTests;
 			productReference = 0A00000100000000000000A2 /* ShiftBlastTests.xctest */;
 			productType = "com.apple.product-type.bundle.unit-test";
+		};
+		0A0000020000000000000401 /* ShiftBlastRelay */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 0A0000020000000000000701 /* Build configuration list for PBXNativeTarget "ShiftBlastRelay" */;
+			buildPhases = (
+				0A0000020000000000000501 /* Sources */,
+				0A0000020000000000000201 /* Frameworks */,
+				0A0000020000000000000601 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = ShiftBlastRelay;
+			productName = ShiftBlastRelay;
+			productReference = 0A00000200000000000000A1 /* ShiftBlastRelay.app */;
+			productType = "com.apple.product-type.application";
 		};
 /* End PBXNativeTarget section */
 
@@ -130,29 +251,65 @@
 				LastSwiftUpdateCheck = 1600;
 				LastUpgradeCheck = 1600;
 				TargetAttributes = {
-					0A0000010000000000000401 = {CreatedOnToolsVersion = 16.0;};
-					0A0000010000000000000402 = {CreatedOnToolsVersion = 16.0; TestTargetID = 0A0000010000000000000401;};
+					0A0000010000000000000401 = {
+						CreatedOnToolsVersion = 16.0;
+					};
+					0A0000010000000000000402 = {
+						CreatedOnToolsVersion = 16.0;
+						TestTargetID = 0A0000010000000000000401;
+					};
+					0A0000020000000000000401 = {
+						CreatedOnToolsVersion = 16.0;
+					};
 				};
 			};
 			buildConfigurationList = 0A0000010000000000000703 /* Build configuration list for PBXProject "ShiftBlast" */;
 			compatibilityVersion = "Xcode 14.0";
 			developmentRegion = en;
 			hasScannedForEncodings = 0;
-			knownRegions = (en, Base);
+			knownRegions = (
+				en,
+				Base,
+			);
 			mainGroup = 0A0000010000000000000301;
+			packageReferences = (
+				4AF945882FA93E6C00ED7248 /* XCRemoteSwiftPackageReference "swift-package-manager-google-mobile-ads" */,
+			);
 			productRefGroup = 0A0000010000000000000304 /* Products */;
 			projectDirPath = "";
 			projectRoot = "";
 			targets = (
 				0A0000010000000000000401 /* ShiftBlast */,
 				0A0000010000000000000402 /* ShiftBlastTests */,
+				0A0000020000000000000401 /* ShiftBlastRelay */,
 			);
 		};
 /* End PBXProject section */
 
 /* Begin PBXResourcesBuildPhase section */
-		0A0000010000000000000601 /* Resources */ = {isa = PBXResourcesBuildPhase; buildActionMask = 2147483647; files = (0A000001000000000000000A /* Assets.xcassets in Resources */,); runOnlyForDeploymentPostprocessing = 0; };
-		0A0000010000000000000602 /* Resources */ = {isa = PBXResourcesBuildPhase; buildActionMask = 2147483647; files = (); runOnlyForDeploymentPostprocessing = 0; };
+		0A0000010000000000000601 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				4AF945852FA93D4700ED7248 /* ShiftBlast.storekit in Resources */,
+				0A000001000000000000000A /* Assets.xcassets in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		0A0000010000000000000602 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		0A0000020000000000000601 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXResourcesBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
@@ -162,6 +319,7 @@
 			files = (
 				0A0000010000000000000001 /* ShiftBlastApp.swift in Sources */,
 				0A0000010000000000000002 /* GameModels.swift in Sources */,
+				4AF945872FA93DF300ED7248 /* AdMobBannerView.swift in Sources */,
 				0A0000010000000000000003 /* SeededGenerator.swift in Sources */,
 				0A0000010000000000000004 /* GameEngine.swift in Sources */,
 				0A0000010000000000000005 /* GameStore.swift in Sources */,
@@ -169,19 +327,49 @@
 				0A0000010000000000000007 /* ContentView.swift in Sources */,
 				0A0000010000000000000008 /* BoardView.swift in Sources */,
 				0A0000010000000000000009 /* FeedbackPlayer.swift in Sources */,
+				4AF945822FA93CFC00ED7248 /* PaywallView.swift in Sources */,
+				4AF9458B2FA9400000ED7248 /* SettingsView.swift in Sources */,
+				4AF945832FA93CFC00ED7248 /* SubscriptionStore.swift in Sources */,
+				0A000001000000000000000C /* AgentSignalWatcher.swift in Sources */,
+				0A0000010000000000000010 /* AgentBridge.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
-		0A0000010000000000000502 /* Sources */ = {isa = PBXSourcesBuildPhase; buildActionMask = 2147483647; files = (0A000001000000000000000B /* GameEngineTests.swift in Sources */,); runOnlyForDeploymentPostprocessing = 0; };
+		0A0000010000000000000502 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				0A000001000000000000000B /* GameEngineTests.swift in Sources */,
+				0A000001000000000000000E /* GameViewModelTests.swift in Sources */,
+				0A0000010000000000000011 /* AgentBridgeTests.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		0A0000020000000000000501 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				0A0000020000000000000010 /* RelayApp.swift in Sources */,
+				0A0000020000000000000011 /* RelayCoordinator.swift in Sources */,
+				0A0000020000000000000012 /* RelayMenuView.swift in Sources */,
+				0A0000020000000000000013 /* ProcessWatcher.swift in Sources */,
+				0A0000020000000000000014 /* SessionFileWatcher.swift in Sources */,
+				0A0000020000000000000015 /* BookmarkStore.swift in Sources */,
+				0A0000020000000000000016 /* SentinelWriter.swift in Sources */,
+				0A0000020000000000000017 /* LoginItemManager.swift in Sources */,
+				0A0000020000000000000018 /* AgentNames.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXSourcesBuildPhase section */
 
 /* Begin PBXTargetDependency section */
-		0A0000010000000000000801 /* PBXTargetDependency */ = {isa = PBXTargetDependency; target = 0A0000010000000000000401 /* ShiftBlast */; targetProxy = 0A0000010000000000000802 /* PBXContainerItemProxy */; };
+		0A0000010000000000000801 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 0A0000010000000000000401 /* ShiftBlast */;
+			targetProxy = 0A0000010000000000000802 /* PBXContainerItemProxy */;
+		};
 /* End PBXTargetDependency section */
-
-/* Begin PBXContainerItemProxy section */
-		0A0000010000000000000802 /* PBXContainerItemProxy */ = {isa = PBXContainerItemProxy; containerPortal = 0A0000010000000000000901 /* Project object */; proxyType = 1; remoteGlobalIDString = 0A0000010000000000000401; remoteInfo = ShiftBlast; };
-/* End PBXContainerItemProxy section */
 
 /* Begin XCBuildConfiguration section */
 		0A0000010000000000000A01 /* Debug */ = {
@@ -224,7 +412,10 @@
 				GCC_DYNAMIC_NO_PIC = NO;
 				GCC_NO_COMMON_BLOCKS = YES;
 				GCC_OPTIMIZATION_LEVEL = 0;
-				GCC_PREPROCESSOR_DEFINITIONS = "DEBUG=1 $(inherited)";
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"DEBUG=1",
+					"$(inherited)",
+				);
 				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
 				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
 				GCC_WARN_UNDECLARED_SELECTOR = YES;
@@ -298,22 +489,26 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_ENTITLEMENTS = ShiftBlast/ShiftBlast.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_ASSET_PATHS = "";
-				DEVELOPMENT_TEAM = "";
+				DEVELOPMENT_TEAM = 2MY3NF258J;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = ShiftBlast/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = "Shift Blast";
+				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.games";
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations = UIInterfaceOrientationPortrait;
 				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
 				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = com.local.shiftblast;
+				PRODUCT_BUNDLE_IDENTIFIER = com.davide.shiftblast;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
 				SUPPORTS_MACCATALYST = NO;
 				SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD = NO;
+				SUPPORTS_XR_DESIGNED_FOR_IPHONE_IPAD = NO;
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = 1;
@@ -324,22 +519,26 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_ENTITLEMENTS = ShiftBlast/ShiftBlast.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_ASSET_PATHS = "";
-				DEVELOPMENT_TEAM = "";
+				DEVELOPMENT_TEAM = 2MY3NF258J;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = ShiftBlast/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = "Shift Blast";
+				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.games";
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations = UIInterfaceOrientationPortrait;
 				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
 				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = com.local.shiftblast;
+				PRODUCT_BUNDLE_IDENTIFIER = com.davide.shiftblast;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
 				SUPPORTS_MACCATALYST = NO;
 				SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD = NO;
+				SUPPORTS_XR_DESIGNED_FOR_IPHONE_IPAD = NO;
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = 1;
@@ -352,10 +551,11 @@
 				BUNDLE_LOADER = "$(TEST_HOST)";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 2MY3NF258J;
 				GENERATE_INFOPLIST_FILE = YES;
 				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
 				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = com.local.shiftblast.tests;
+				PRODUCT_BUNDLE_IDENTIFIER = com.davide.shiftblast.tests;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
 				SWIFT_VERSION = 5.0;
@@ -370,10 +570,11 @@
 				BUNDLE_LOADER = "$(TEST_HOST)";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 2MY3NF258J;
 				GENERATE_INFOPLIST_FILE = YES;
 				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
 				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = com.local.shiftblast.tests;
+				PRODUCT_BUNDLE_IDENTIFIER = com.davide.shiftblast.tests;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
 				SWIFT_VERSION = 5.0;
@@ -382,13 +583,113 @@
 			};
 			name = Release;
 		};
+		0A0000020000000000000A01 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_ENTITLEMENTS = ShiftBlastRelay/ShiftBlastRelay.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				COMBINE_HIDPI_IMAGES = YES;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_ASSET_PATHS = "";
+				DEVELOPMENT_TEAM = 2MY3NF258J;
+				ENABLE_PREVIEWS = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_CFBundleDisplayName = "ShiftBlast Relay";
+				INFOPLIST_KEY_LSUIElement = YES;
+				MACOSX_DEPLOYMENT_TARGET = 14.0;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.davide.shiftblast.relay;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = macosx;
+				SUPPORTED_PLATFORMS = macosx;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+			};
+			name = Debug;
+		};
+		0A0000020000000000000A02 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_ENTITLEMENTS = ShiftBlastRelay/ShiftBlastRelay.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				COMBINE_HIDPI_IMAGES = YES;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_ASSET_PATHS = "";
+				DEVELOPMENT_TEAM = 2MY3NF258J;
+				ENABLE_PREVIEWS = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_CFBundleDisplayName = "ShiftBlast Relay";
+				INFOPLIST_KEY_LSUIElement = YES;
+				MACOSX_DEPLOYMENT_TARGET = 14.0;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.davide.shiftblast.relay;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = macosx;
+				SUPPORTED_PLATFORMS = macosx;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+			};
+			name = Release;
+		};
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
-		0A0000010000000000000701 /* Build configuration list for PBXNativeTarget "ShiftBlast" */ = {isa = XCConfigurationList; buildConfigurations = (0A0000010000000000000A03 /* Debug */, 0A0000010000000000000A04 /* Release */,); defaultConfigurationIsVisible = 0; defaultConfigurationName = Release; };
-		0A0000010000000000000702 /* Build configuration list for PBXNativeTarget "ShiftBlastTests" */ = {isa = XCConfigurationList; buildConfigurations = (0A0000010000000000000A05 /* Debug */, 0A0000010000000000000A06 /* Release */,); defaultConfigurationIsVisible = 0; defaultConfigurationName = Release; };
-		0A0000010000000000000703 /* Build configuration list for PBXProject "ShiftBlast" */ = {isa = XCConfigurationList; buildConfigurations = (0A0000010000000000000A01 /* Debug */, 0A0000010000000000000A02 /* Release */,); defaultConfigurationIsVisible = 0; defaultConfigurationName = Release; };
+		0A0000010000000000000701 /* Build configuration list for PBXNativeTarget "ShiftBlast" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				0A0000010000000000000A03 /* Debug */,
+				0A0000010000000000000A04 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		0A0000010000000000000702 /* Build configuration list for PBXNativeTarget "ShiftBlastTests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				0A0000010000000000000A05 /* Debug */,
+				0A0000010000000000000A06 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		0A0000010000000000000703 /* Build configuration list for PBXProject "ShiftBlast" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				0A0000010000000000000A01 /* Debug */,
+				0A0000010000000000000A02 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		0A0000020000000000000701 /* Build configuration list for PBXNativeTarget "ShiftBlastRelay" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				0A0000020000000000000A01 /* Debug */,
+				0A0000020000000000000A02 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
 /* End XCConfigurationList section */
+
+/* Begin XCRemoteSwiftPackageReference section */
+		4AF945882FA93E6C00ED7248 /* XCRemoteSwiftPackageReference "swift-package-manager-google-mobile-ads" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/googleads/swift-package-manager-google-mobile-ads.git";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 13.3.0;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		4AF945892FA93E6C00ED7248 /* GoogleMobileAds */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 4AF945882FA93E6C00ED7248 /* XCRemoteSwiftPackageReference "swift-package-manager-google-mobile-ads" */;
+			productName = GoogleMobileAds;
+		};
+/* End XCSwiftPackageProductDependency section */
 	};
 	rootObject = 0A0000010000000000000901 /* Project object */;
 }

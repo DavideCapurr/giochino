@@ -1,5 +1,8 @@
 import Foundation
+import OSLog
 import SwiftUI
+
+private let log = Logger(subsystem: "com.davide.shiftblast", category: "GameViewModel")
 
 @MainActor
 final class GameViewModel: ObservableObject {
@@ -7,10 +10,22 @@ final class GameViewModel: ObservableObject {
     private let feedback = FeedbackPlayer()
     private var completionTask: Task<Void, Never>?
     private var cleanupTask: Task<Void, Never>?
+    private var spawnMarkerTask: Task<Void, Never>?
     private var isResolvingMove = false
+    private var agentWatcher: AgentSignalWatcher?
 
     @Published
     var state: GameState
+
+    @Published
+    var isAgentPaused: Bool = false
+
+    @Published
+    var isMuted: Bool = false
+
+    @Published var isAgentEnabled: Bool = false {
+        didSet { updateAgentWatcher() }
+    }
 
     init() {
         if let saved = store.load() {
@@ -25,12 +40,15 @@ final class GameViewModel: ObservableObject {
     deinit {
         completionTask?.cancel()
         cleanupTask?.cancel()
+        spawnMarkerTask?.cancel()
+        agentWatcher?.stop()
     }
 
     func swipe(_ direction: SwipeDirection) {
+        guard !isAgentPaused, !state.isGameOver else { return }
+        feedback.impact()
         guard !isResolvingMove else { return }
         guard GameEngine.startMove(direction, in: &state) else { return }
-        feedback.impact()
         store.save(state)
         scheduleMoveCompletion(after: state.activeMove?.duration ?? GameEngine.slideDuration)
     }
@@ -38,8 +56,9 @@ final class GameViewModel: ObservableObject {
     func restart() {
         completionTask?.cancel()
         cleanupTask?.cancel()
+        spawnMarkerTask?.cancel()
         isResolvingMove = false
-        state = GameEngine.newGame(bestScore: state.bestScore)
+        state = GameEngine.newGame(bestScore: state.bestScore, leaderboard: state.leaderboard)
         store.save(state)
     }
 
@@ -59,6 +78,39 @@ final class GameViewModel: ObservableObject {
 
         let remaining = max(0.03, activeMove.duration * (1 - frozenProgress))
         scheduleMoveCompletion(after: remaining)
+    }
+
+    func handleAgentReadySignal() {
+        guard !isAgentPaused else { return }
+        freezeActiveMoveIfNeeded()
+        store.save(state)
+        isAgentPaused = true
+        log.notice("⏸️ game paused by agent watcher")
+    }
+
+    func dismissAgentPause() {
+        guard isAgentPaused else { return }
+        isAgentPaused = false
+        resumeInterruptedMoveIfNeeded()
+    }
+
+    func toggleMute() {
+        isMuted.toggle()
+        feedback.isMuted = isMuted
+    }
+
+    private func updateAgentWatcher() {
+        if isAgentEnabled {
+            guard agentWatcher == nil else { return }
+            let watcher = AgentSignalWatcher { [weak self] _ in
+                self?.handleAgentReadySignal()
+            }
+            agentWatcher = watcher
+            watcher.start()
+        } else {
+            agentWatcher?.stop()
+            agentWatcher = nil
+        }
     }
 
     func displayPosition(for block: GameBlock, now: Date) -> CGPoint? {
@@ -104,9 +156,9 @@ final class GameViewModel: ObservableObject {
         let outcome = GameEngine.finishActiveMove(in: &state)
         if !outcome.clearedLines.isEmpty {
             feedback.clear()
-            spawnAfterDelay(0.28)
+            spawnAfterDelay(0.16)
         } else {
-            spawnAfterDelay(0.12)
+            spawnAfterDelay(0.06)
         }
         store.save(state)
     }
@@ -118,6 +170,10 @@ final class GameViewModel: ObservableObject {
             await MainActor.run {
                 guard let self else { return }
                 _ = GameEngine.spawnAfterMove(in: &self.state)
+                if self.state.isGameOver {
+                    GameEngine.recordFinishedRun(in: &self.state)
+                }
+                self.isResolvingMove = false
                 self.store.save(self.state)
                 self.clearSpawnMarkersAfterDelay()
             }
@@ -125,13 +181,12 @@ final class GameViewModel: ObservableObject {
     }
 
     private func clearSpawnMarkersAfterDelay() {
-        cleanupTask?.cancel()
-        cleanupTask = Task { [weak self] in
-            try? await Task.sleep(nanoseconds: 520_000_000)
+        spawnMarkerTask?.cancel()
+        spawnMarkerTask = Task { [weak self] in
+            try? await Task.sleep(nanoseconds: 280_000_000)
             await MainActor.run {
                 guard let self else { return }
                 self.state.spawningBlockIDs = []
-                self.isResolvingMove = false
                 self.store.save(self.state)
             }
         }

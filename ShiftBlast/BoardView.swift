@@ -3,15 +3,18 @@ import SwiftUI
 struct BoardView: View {
     @ObservedObject var viewModel: GameViewModel
 
+    private let gap: CGFloat = 3
+    private let boardPadding: CGFloat = 10
+
     var body: some View {
         TimelineView(.animation) { timeline in
             GeometryReader { proxy in
                 let size = viewModel.state.boardSize
-                let gap: CGFloat = 6
-                let cell = (proxy.size.width - gap * CGFloat(size + 1)) / CGFloat(size)
+                let totalGap: CGFloat = gap * CGFloat(size - 1)
+                let cell: CGFloat = (proxy.size.width - 2 * boardPadding - totalGap) / CGFloat(size)
 
                 ZStack(alignment: .topLeading) {
-                    BoardGrid(size: size, gap: gap, cell: cell)
+                    BoardGrid(size: size, gap: gap, cell: cell, padding: boardPadding)
 
                     ForEach(viewModel.state.blocks) { block in
                         let isSpawning = viewModel.state.spawningBlockIDs.contains(block.id)
@@ -20,32 +23,34 @@ struct BoardView: View {
                             .frame(width: cell, height: cell)
                             .opacity(opacity(forClearing: isClearing, spawning: isSpawning, now: timeline.date))
                             .scaleEffect(scale(forClearing: isClearing, spawning: isSpawning, now: timeline.date))
-                            .position(position(for: block, now: timeline.date, gap: gap, cell: cell))
+                            .position(position(for: block, now: timeline.date, gap: gap, cell: cell, padding: boardPadding))
                             .animation(.spring(response: 0.24, dampingFraction: 0.8), value: block.position)
                             .animation(.easeOut(duration: 0.2), value: isClearing)
                             .animation(.spring(response: 0.32, dampingFraction: 0.68), value: isSpawning)
                     }
                 }
                 .frame(width: proxy.size.width, height: proxy.size.width)
-                .background(
-                    RoundedRectangle(cornerRadius: 8, style: .continuous)
-                        .fill(Color.white.opacity(0.045))
-                        .overlay(
-                            RoundedRectangle(cornerRadius: 8, style: .continuous)
-                                .stroke(Color.white.opacity(0.09), lineWidth: 1)
-                        )
-                )
+                .background(boardBackground)
             }
         }
     }
 
-    private func position(for block: GameBlock, now: Date, gap: CGFloat, cell: CGFloat) -> CGPoint {
+    @ViewBuilder private var boardBackground: some View {
+        let shape = RoundedRectangle(cornerRadius: 16, style: .continuous)
+        shape
+            .fill(Color.nightBoardBg.opacity(0.6))
+            .overlay(shape.stroke(Color.nightBoardBorder.opacity(0.5), lineWidth: 1))
+            .shadow(color: Color.nightBoardBorder.opacity(0.15), radius: 1)
+            .shadow(color: Color(red: 0.03, green: 0.04, blue: 0.14).opacity(0.8), radius: 60, x: 0, y: 20)
+    }
+
+    private func position(for block: GameBlock, now: Date, gap: CGFloat, cell: CGFloat, padding: CGFloat) -> CGPoint {
         let display = viewModel.displayPosition(for: block, now: now)
         let column = display?.x ?? CGFloat(block.position.column)
         let row = display?.y ?? CGFloat(block.position.row)
         return CGPoint(
-            x: gap + cell / 2 + column * (cell + gap),
-            y: gap + cell / 2 + row * (cell + gap)
+            x: padding + cell / 2 + column * (cell + gap),
+            y: padding + cell / 2 + row * (cell + gap)
         )
     }
 
@@ -68,23 +73,27 @@ private struct BoardGrid: View {
     let size: Int
     let gap: CGFloat
     let cell: CGFloat
+    let padding: CGFloat
 
     var body: some View {
         ForEach(0..<size, id: \.self) { row in
             ForEach(0..<size, id: \.self) { column in
-                RoundedRectangle(cornerRadius: 5, style: .continuous)
-                    .fill(Color.white.opacity(0.028))
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 5, style: .continuous)
-                            .stroke(Color.white.opacity(0.035), lineWidth: 1)
-                    )
-                    .frame(width: cell, height: cell)
-                    .position(
-                        x: gap + cell / 2 + CGFloat(column) * (cell + gap),
-                        y: gap + cell / 2 + CGFloat(row) * (cell + gap)
-                    )
+                gridCell(row: row, column: column)
             }
         }
+    }
+
+    private func gridCell(row: Int, column: Int) -> some View {
+        let x: CGFloat = padding + cell / 2 + CGFloat(column) * (cell + gap)
+        let y: CGFloat = padding + cell / 2 + CGFloat(row) * (cell + gap)
+        return RoundedRectangle(cornerRadius: 7, style: .continuous)
+            .fill(Color.nightCellBg.opacity(0.8))
+            .overlay(
+                RoundedRectangle(cornerRadius: 7, style: .continuous)
+                    .stroke(Color.nightCellBorder.opacity(0.4), lineWidth: 1)
+            )
+            .frame(width: cell, height: cell)
+            .position(x: x, y: y)
     }
 }
 
@@ -97,6 +106,8 @@ private struct BlockView: View {
     var body: some View {
         let baseColor = isClearing ? Color.white : block.tone.color
         let spawnPulse = CGFloat((sin(now.timeIntervalSinceReferenceDate * 16) + 1) / 2)
+        let primaryGlow = isSpawning ? 0.5 + spawnPulse * 0.22 : 0
+        let secondaryGlow = isSpawning ? 0.3 : 0
 
         RoundedRectangle(cornerRadius: 6, style: .continuous)
             .fill(
@@ -126,8 +137,8 @@ private struct BlockView: View {
                     )
                     .padding(2)
             }
-            .shadow(color: baseColor.opacity(isClearing ? 0.95 : 0.46 + spawnPulse * 0.16), radius: isClearing ? 20 : 10)
-            .shadow(color: baseColor.opacity(isClearing ? 0.6 : 0.2), radius: isClearing ? 34 : 20)
+            .shadow(color: baseColor.opacity(primaryGlow), radius: isSpawning ? 13 : 0)
+            .shadow(color: baseColor.opacity(secondaryGlow), radius: isSpawning ? 26 : 0)
     }
 }
 
@@ -151,4 +162,13 @@ extension Color {
     static let shiftYellow = Color(red: 1.0, green: 0.9, blue: 0.2)
     static let shiftOrange = Color(red: 1.0, green: 0.45, blue: 0.16)
     static let shiftViolet = Color(red: 0.64, green: 0.38, blue: 1.0)
+
+    // Board grid — oklch(0.1 0.04 260) dark indigo
+    static let nightBoardBg     = Color(red: 0.06, green: 0.07, blue: 0.11)
+    // Board border — oklch(0.25 0.08 270)
+    static let nightBoardBorder = Color(red: 0.15, green: 0.16, blue: 0.26)
+    // Cell bg — oklch(0.13 0.04 260)
+    static let nightCellBg      = Color(red: 0.08, green: 0.08, blue: 0.14)
+    // Cell border — oklch(0.2 0.05 260)
+    static let nightCellBorder  = Color(red: 0.12, green: 0.12, blue: 0.19)
 }

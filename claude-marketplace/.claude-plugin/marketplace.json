@@ -1,0 +1,13 @@
+{
+  "name": "shiftblast-local",
+  "owner": {
+    "name": "ShiftBlast"
+  },
+  "plugins": [
+    {
+      "name": "shiftblast-alert",
+      "source": "./shiftblast-alert",
+      "description": "Notify ShiftBlast when Claude Code finishes a response"
+    }
+  ]
+}

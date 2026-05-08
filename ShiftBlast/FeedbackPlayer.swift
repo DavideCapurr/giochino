@@ -7,6 +7,8 @@ final class FeedbackPlayer {
     private let clearGenerator = UINotificationFeedbackGenerator()
     private var audioPlayer: AVAudioPlayer?
 
+    var isMuted: Bool = false
+
     init() {
         impactGenerator.prepare()
         clearGenerator.prepare()
@@ -21,6 +23,7 @@ final class FeedbackPlayer {
     func clear() {
         clearGenerator.notificationOccurred(.success)
         clearGenerator.prepare()
+        guard !isMuted else { return }
         audioPlayer?.currentTime = 0
         audioPlayer?.play()
     }

@@ -10,13 +10,16 @@ struct MoveOutcome: Equatable {
 
 enum GameEngine {
     static let defaultBoardSize = 8
-    static let initialBlockRange = 10..<15
+    static let initialEmptyCellRange = 20..<30
     static let slideDuration: TimeInterval = 0.24
+    static let scorePerLine = 300
+    static let flowThreshold = 90
+    static let maxSignal = 100
 
-    static func newGame(seed: UInt64 = UInt64(Date().timeIntervalSince1970 * 1_000_000), bestScore: Int = 0) -> GameState {
-        var state = GameState(boardSize: defaultBoardSize, bestScore: bestScore, rng: SeededGenerator(seed: seed))
-        let count = state.rng.nextInt(in: initialBlockRange)
-        _ = spawnBlocks(count: count, in: &state, allowGameOver: false)
+    static func newGame(seed: UInt64 = UInt64(Date().timeIntervalSince1970 * 1_000_000), bestScore: Int = 0, leaderboard: [LeaderboardEntry] = []) -> GameState {
+        var state = GameState(boardSize: defaultBoardSize, bestScore: bestScore, leaderboard: leaderboard, rng: SeededGenerator(seed: seed))
+        let emptyCellCount = state.rng.nextInt(in: initialEmptyCellRange)
+        seedDenseBoard(in: &state, emptyCellCount: emptyCellCount)
         state.spawningBlockIDs = []
         return state
     }
@@ -41,8 +44,27 @@ enum GameEngine {
         state.highlightedLines = []
         state.clearingBlockIDs = []
         state.spawningBlockIDs = []
+        state.lastClear = nil
+        state.lastCoreBurst = nil
+        state.lastSignalEvent = nil
+        state.moves += 1
+        state.level = level(forScore: state.score, moves: state.moves)
         state.activeMove = ActiveMove(direction: direction, steps: movingSteps, startedAt: now, duration: slideDuration, savedProgress: nil)
         return true
+    }
+
+    static func recordFinishedRun(in state: inout GameState, now: Date = Date()) {
+        guard state.isGameOver, state.score > 0 else { return }
+        let entry = LeaderboardEntry(score: state.score, moves: state.moves, blocksLeft: state.blocks.count, playedAt: now)
+        state.leaderboard.append(entry)
+        state.leaderboard.sort {
+            if $0.score == $1.score {
+                return $0.moves < $1.moves
+            }
+            return $0.score > $1.score
+        }
+        state.leaderboard = Array(state.leaderboard.prefix(5))
+        state.bestScore = max(state.bestScore, state.leaderboard.first?.score ?? state.score)
     }
 
     @discardableResult
@@ -63,7 +85,32 @@ enum GameEngine {
     @discardableResult
     static func spawnAfterMove(in state: inout GameState) -> MoveOutcome {
         removeClearedBlocks(in: &state)
-        let spawnCount = state.rng.nextBool(probability: 0.5) ? 2 : 3
+        triggerCoreBurstIfReady(in: &state)
+        guard !state.isGameOver else {
+            return MoveOutcome(
+                clearedLines: [],
+                clearedBlockIDs: [],
+                scoreDelta: 0,
+                spawnedBlockIDs: [],
+                didGameOver: true
+            )
+        }
+        let emptyCount = emptyCells(in: state).count
+        guard emptyCount > 0 else {
+            state.isGameOver = true
+            return MoveOutcome(
+                clearedLines: [],
+                clearedBlockIDs: [],
+                scoreDelta: 0,
+                spawnedBlockIDs: [],
+                didGameOver: true
+            )
+        }
+        let spawnCount = incomingBlockCount(
+            forXP: pointMultiplier(forVictories: state.victories),
+            emptyCellCount: emptyCount,
+            rng: &state.rng
+        )
         let spawnedIDs = spawnBlocks(count: spawnCount, in: &state, allowGameOver: true)
         state.bestScore = max(state.bestScore, state.score)
 
@@ -99,7 +146,7 @@ enum GameEngine {
 
         var spawnedIDs = Set<UUID>()
         for _ in 0..<count {
-            let cellIndex = state.rng.nextInt(in: 0..<empty.count)
+            let cellIndex = spawnCellIndex(from: empty, existingBlocks: state.blocks, boardSize: state.boardSize, rng: &state.rng)
             let cell = empty.remove(at: cellIndex)
             let tone = BlockTone.allCases[state.rng.nextInt(in: 0..<BlockTone.allCases.count)]
             let block = GameBlock(position: cell, tone: tone)
@@ -108,6 +155,246 @@ enum GameEngine {
         }
         state.spawningBlockIDs = spawnedIDs
         return spawnedIDs
+    }
+
+    private static func spawnCellIndex(from emptyCells: [GridPoint], existingBlocks: [GameBlock], boardSize: Int, rng: inout SeededGenerator) -> Int {
+        let occupied = Set(existingBlocks.map(\.position))
+        let safeIndexes = emptyCells.indices.filter { index in
+            !wouldCompleteLine(at: emptyCells[index], occupied: occupied, boardSize: boardSize)
+        }
+
+        guard !safeIndexes.isEmpty else {
+            return rng.nextInt(in: 0..<emptyCells.count)
+        }
+
+        return safeIndexes[rng.nextInt(in: 0..<safeIndexes.count)]
+    }
+
+    private static func wouldCompleteLine(at point: GridPoint, occupied: Set<GridPoint>, boardSize: Int) -> Bool {
+        let rowWouldFill = (0..<boardSize).allSatisfy { column in
+            column == point.column || occupied.contains(GridPoint(row: point.row, column: column))
+        }
+        let columnWouldFill = (0..<boardSize).allSatisfy { row in
+            row == point.row || occupied.contains(GridPoint(row: row, column: point.column))
+        }
+        return rowWouldFill || columnWouldFill
+    }
+
+    static func seedDenseBoard(in state: inout GameState, emptyCellCount requestedEmptyCellCount: Int) {
+        let size = state.boardSize
+        let totalCells = size * size
+        let targetEmptyCellCount = min(totalCells - 1, max(size, requestedEmptyCellCount))
+        var emptyCells = Set<GridPoint>()
+        let thinRow = state.rng.nextInt(in: 0..<size)
+        let thinColumn = state.rng.nextInt(in: 0..<size)
+        let thinRowBlockColumn = randomIndex(excluding: thinColumn, size: size, rng: &state.rng)
+        let thinColumnBlockRow = randomIndex(excluding: thinRow, size: size, rng: &state.rng)
+
+        for column in 0..<size where column != thinRowBlockColumn {
+            emptyCells.insert(GridPoint(row: thinRow, column: column))
+        }
+
+        for row in 0..<size where row != thinColumnBlockRow {
+            emptyCells.insert(GridPoint(row: row, column: thinColumn))
+        }
+
+        for row in 0..<size {
+            emptyCells.insert(GridPoint(row: row, column: state.rng.nextInt(in: 0..<size)))
+        }
+
+        for column in 0..<size where !emptyCells.contains(where: { $0.column == column }) {
+            emptyCells.insert(GridPoint(row: state.rng.nextInt(in: 0..<size), column: column))
+        }
+
+        while emptyCells.count < targetEmptyCellCount {
+            emptyCells.insert(GridPoint(row: state.rng.nextInt(in: 0..<size), column: state.rng.nextInt(in: 0..<size)))
+        }
+
+        var blocks: [GameBlock] = []
+        blocks.reserveCapacity(totalCells - emptyCells.count)
+        for row in 0..<size {
+            for column in 0..<size {
+                let point = GridPoint(row: row, column: column)
+                guard !emptyCells.contains(point) else { continue }
+                let tone = BlockTone.allCases[state.rng.nextInt(in: 0..<BlockTone.allCases.count)]
+                blocks.append(GameBlock(position: point, tone: tone))
+            }
+        }
+        state.blocks = blocks
+    }
+
+    private static func randomIndex(excluding excludedIndex: Int, size: Int, rng: inout SeededGenerator) -> Int {
+        guard size > 1 else { return 0 }
+        var index = rng.nextInt(in: 0..<(size - 1))
+        if index >= excludedIndex {
+            index += 1
+        }
+        return index
+    }
+
+    static func level(forScore score: Int, moves: Int) -> Int {
+        let scoreLevel = score / 500
+        let moveLevel = moves / 18
+        return max(1, 1 + max(scoreLevel, moveLevel))
+    }
+
+    static func incomingBlockPreview(forLevel level: Int) -> String {
+        switch level {
+        case 1:
+            return "2"
+        case 2:
+            return "2-3"
+        case 3:
+            return "3-4"
+        case 4:
+            return "4"
+        default:
+            return level.isMultiple(of: 3) ? "4-5" : "4"
+        }
+    }
+
+    static func incomingBlockPreview(forXP xp: Double) -> String {
+        incomingBlockPreview(forXP: xp, emptyCellCount: Int.max)
+    }
+
+    static func incomingBlockPreview(forXP xp: Double, emptyCellCount: Int) -> String {
+        guard emptyCellCount > 0 else { return "0" }
+
+        let baseRange: ClosedRange<Int>
+        switch xp {
+        case ..<1.15:
+            baseRange = 2...3
+        case ..<1.35:
+            baseRange = 2...2
+        case ..<1.7:
+            baseRange = 1...2
+        default:
+            baseRange = 1...1
+        }
+
+        let pressureCap: Int
+        switch emptyCellCount {
+        case 1...5:
+            pressureCap = 1
+        case 6...12:
+            pressureCap = 2
+        case 13...18:
+            pressureCap = 3
+        case 19...24:
+            pressureCap = 3
+        default:
+            pressureCap = 4
+        }
+
+        let refillFloor = refillSpawnFloor(forEmptyCellCount: emptyCellCount)
+        let lower = min(emptyCellCount, max(refillFloor, min(baseRange.lowerBound, pressureCap)))
+        let upper = min(emptyCellCount, max(lower, min(max(baseRange.upperBound, refillFloor), pressureCap)))
+        if lower == upper {
+            return "\(upper)"
+        }
+        return "\(lower)-\(upper)"
+    }
+
+    static func pointMultiplier(forVictories victories: Int) -> Double {
+        1 + sqrt(Double(max(0, victories))) * 0.1
+    }
+
+    static func formattedMultiplier(_ multiplier: Double) -> String {
+        String(format: "%.2fx", multiplier)
+    }
+
+    static func difficultyCoefficient(forScore score: Int, moves: Int, victories: Int) -> Double {
+        1 + Double(max(0, moves)) * 0.006 + Double(max(0, victories)) * 0.045 + Double(max(0, score)) / 8_000
+    }
+
+    static func emptySwipePenalty(forDifficulty difficulty: Double, rng: inout SeededGenerator) -> Int {
+        let base = min(18, 6 + Int((max(1, difficulty) - 1) * 1.5))
+        let jitter = rng.nextInt(in: -2..<3)
+        return max(3, base + jitter)
+    }
+
+    static func signalGain(forLineCount lineCount: Int, streak: Int = 0, difficulty: Double = 1) -> Int {
+        let base: Int
+        switch lineCount {
+        case 0: return 0
+        case 1: base = 6
+        case 2: base = 12
+        default: base = 20
+        }
+        let raw = base + min(8, max(0, streak) * 1)
+        let decay = max(0.4, 1.0 - (difficulty - 1) * 0.06)
+        return max(2, Int((Double(raw) * decay).rounded()))
+    }
+
+    static func streakBonus(forStreak streak: Int, difficulty: Double) -> Int {
+        let perStreak = max(30, 90 - Int((difficulty - 1) * 8))
+        return max(0, streak - 1) * perStreak
+    }
+
+    static func incomingBlockCount(forLevel level: Int, rng: inout SeededGenerator) -> Int {
+        switch level {
+        case 1:
+            return 2
+        case 2:
+            return rng.nextBool(probability: 0.7) ? 2 : 3
+        case 3:
+            return rng.nextBool(probability: 0.45) ? 4 : 3
+        case 4:
+            return 4
+        default:
+            let extraProbability = min(0.45, 0.1 + Double(level - 5) * 0.03)
+            return rng.nextBool(probability: extraProbability) ? 5 : 4
+        }
+    }
+
+    static func incomingBlockCount(forXP xp: Double, rng: inout SeededGenerator) -> Int {
+        switch xp {
+        case ..<1.15:
+            return rng.nextBool(probability: 0.3) ? 3 : 2
+        case ..<1.35:
+            return 2
+        case ..<1.7:
+            return rng.nextBool(probability: 0.4) ? 2 : 1
+        default:
+            return 1
+        }
+    }
+
+    static func incomingBlockCount(forXP xp: Double, emptyCellCount: Int, rng: inout SeededGenerator) -> Int {
+        guard emptyCellCount > 0 else { return 0 }
+
+        let baseCount = incomingBlockCount(forXP: xp, rng: &rng)
+        let pressureCap: Int
+        switch emptyCellCount {
+        case 1...5:
+            pressureCap = 1
+        case 6...12:
+            pressureCap = 2
+        case 13...18:
+            pressureCap = 3
+        case 19...24:
+            pressureCap = 3
+        default:
+            pressureCap = 4
+        }
+
+        let refillFloor = refillSpawnFloor(forEmptyCellCount: emptyCellCount)
+        return min(emptyCellCount, max(refillFloor, min(baseCount, pressureCap)))
+    }
+
+    static func refillSpawnFloor(forEmptyCellCount emptyCellCount: Int) -> Int {
+        switch emptyCellCount {
+        case 29...:
+            return 4
+        case 25...28:
+            return 3
+        case 19...24:
+            return 2
+        case 13...18:
+            return 2
+        default:
+            return 1
+        }
     }
 
     static func removeClearedBlocks(in state: inout GameState) {
@@ -130,6 +417,19 @@ enum GameEngine {
         guard !lines.isEmpty else {
             state.highlightedLines = []
             state.clearingBlockIDs = []
+            state.lastClear = nil
+            state.streak = 0
+            state.streakMovesRemaining = 0
+            let difficulty = difficultyCoefficient(forScore: state.score, moves: state.moves, victories: state.victories)
+            var penalty = emptySwipePenalty(forDifficulty: difficulty, rng: &state.rng)
+            if state.signal <= 25 {
+                penalty = min(penalty, max(1, state.signal / 2))
+            }
+            state.signal = max(0, state.signal - penalty)
+            state.lastSignalEvent = SignalEvent(kind: .emptySwipe, delta: -penalty, value: state.signal)
+            if state.signal == 0 {
+                state.isGameOver = true
+            }
             return ([], [], 0)
         }
 
@@ -143,11 +443,87 @@ enum GameEngine {
         state.highlightedLines = lines
         state.clearingBlockIDs = clearedIDs
 
-        let base = lines.count * 100
-        let combo = max(0, lines.count - 1) * 50
-        let delta = base + combo
+        if state.streakMovesRemaining > 0 {
+            state.streak += 1
+        } else {
+            state.streak = 1
+        }
+        state.streakMovesRemaining = 5
+
+        let difficulty = difficultyCoefficient(forScore: state.score, moves: state.moves, victories: state.victories)
+        let base = lines.count * scorePerLine
+        let combo = simultaneousClearBonus(forLineCount: lines.count)
+        let strkBonus = Self.streakBonus(forStreak: state.streak, difficulty: difficulty)
+        let rawDelta = base + combo + strkBonus
+        state.victories += lines.count
+        let multiplier = pointMultiplier(forVictories: state.victories)
+        let delta = Int((Double(rawDelta) * multiplier).rounded())
+        let flowGain = flowGain(forLineCount: lines.count, simultaneousBonus: combo, streak: state.streak)
+        let signalGain = signalGain(forLineCount: lines.count, streak: state.streak, difficulty: difficulty)
         state.score += delta
+        state.flowEnergy += flowGain
+        state.signal = min(maxSignal, state.signal + signalGain)
+        state.lastSignalEvent = SignalEvent(kind: .clear, delta: signalGain, value: state.signal)
+        state.level = level(forScore: state.score, moves: state.moves)
+        state.lastClear = ClearSummary(
+            lineCount: lines.count,
+            scoreDelta: delta,
+            bonus: combo + strkBonus,
+            streak: state.streak,
+            flowGained: flowGain,
+            pointMultiplier: multiplier
+        )
         return (lines, clearedIDs, delta)
+    }
+
+    static func simultaneousClearBonus(forLineCount lineCount: Int) -> Int {
+        guard lineCount > 1 else { return 0 }
+        return (lineCount - 1) * 500 + max(0, lineCount - 2) * 250
+    }
+
+    static func flowGain(forLineCount lineCount: Int, simultaneousBonus: Int, streak: Int) -> Int {
+        32 * lineCount + simultaneousBonus / 18 + min(30, max(0, streak - 1) * 5)
+    }
+
+    @discardableResult
+    static func triggerCoreBurstIfReady(in state: inout GameState) -> CoreBurstSummary? {
+        guard state.flowEnergy >= flowThreshold else { return nil }
+        guard let target = densestLine(in: state) else { return nil }
+
+        let blockCount: Int
+        switch target {
+        case .row(let row):
+            blockCount = state.blocks.filter { $0.position.row == row }.count
+        case .column(let column):
+            blockCount = state.blocks.filter { $0.position.column == column }.count
+        }
+        guard blockCount > 0 else { return nil }
+
+        state.flowEnergy -= flowThreshold
+        let streakMultiplier = 1.0 + Double(max(0, state.streak - 1)) * 0.5
+        let victoryMultiplier = pointMultiplier(forVictories: state.victories)
+        let delta = Int((Double(75 * blockCount) * streakMultiplier * victoryMultiplier).rounded())
+        state.score += delta
+        state.signal = min(maxSignal, state.signal + 8)
+        state.level = level(forScore: state.score, moves: state.moves)
+
+        let summary = CoreBurstSummary(clearedCount: blockCount, line: target, scoreDelta: delta)
+        state.lastCoreBurst = summary
+        return summary
+    }
+
+    private static func densestLine(in state: GameState) -> ClearedLine? {
+        let rows = (0..<state.boardSize).map { row in
+            (ClearedLine.row(row), state.blocks.filter { $0.position.row == row }.count)
+        }
+        let columns = (0..<state.boardSize).map { column in
+            (ClearedLine.column(column), state.blocks.filter { $0.position.column == column }.count)
+        }
+
+        return (rows + columns)
+            .filter { $0.1 > 0 }
+            .max { lhs, rhs in lhs.1 < rhs.1 }?
+            .0
     }
 
     private static func compressedPositions(for blocks: [GameBlock], boardSize: Int, direction: SwipeDirection) -> [UUID: GridPoint] {

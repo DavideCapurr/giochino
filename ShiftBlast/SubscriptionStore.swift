@@ -1,5 +1,8 @@
 import Foundation
 import StoreKit
+import OSLog
+
+private let log = Logger(subsystem: "com.davide.shiftblast", category: "SubscriptionStore")
 
 @MainActor
 final class SubscriptionStore: ObservableObject {
@@ -16,19 +19,20 @@ final class SubscriptionStore: ObservableObject {
     @Published private(set) var products: [Product] = []
     @Published private(set) var isPremium = false
     @Published private(set) var state: PurchaseState = .idle
+    @Published private(set) var didFinishLoadingProducts = false
 
     var premiumProduct: Product? {
         products.first { $0.id == Self.premiumMonthlyProductID }
     }
 
     var premiumDisplayPrice: String {
-        premiumProduct?.displayPrice ?? "Monthly"
+        premiumProduct?.displayPrice ?? "$2.99"
     }
 
     private var updatesTask: Task<Void, Never>?
-    private let productIDs: Set<String>
+    private let productIDs: [String]
 
-    init(productIDs: Set<String> = [SubscriptionStore.premiumMonthlyProductID]) {
+    init(productIDs: [String] = [SubscriptionStore.premiumMonthlyProductID]) {
         self.productIDs = productIDs
     }
 
@@ -46,7 +50,6 @@ final class SubscriptionStore: ObservableObject {
     func purchasePremium() async {
         guard let premiumProduct else {
             state = .failed("Premium subscription is not available yet.")
-            await loadProducts()
             return
         }
 
@@ -92,12 +95,29 @@ final class SubscriptionStore: ObservableObject {
     }
 
     private func loadProducts() async {
+        log.notice("⏳ Loading products for IDs: \(self.productIDs, privacy: .public)")
         state = .loading
+        didFinishLoadingProducts = false
+
         do {
-            products = try await Product.products(for: Array(productIDs))
-                .sorted { $0.displayName < $1.displayName }
-            state = .idle
+            let fetched = try await Product.products(for: productIDs)
+            log.notice("✅ StoreKit returned \(fetched.count) product(s)")
+            for p in fetched {
+                log.notice("   → \(p.id, privacy: .public): \(p.displayName, privacy: .public) \(p.displayPrice, privacy: .public)")
+            }
+            products = fetched.sorted { $0.displayName < $1.displayName }
+            didFinishLoadingProducts = true
+
+            if products.isEmpty {
+                log.error("⚠️ Product.products returned empty — StoreKit configuration may not be linked in scheme")
+                state = .failed("Subscription not available. Check your connection.")
+            } else {
+                state = .idle
+            }
         } catch {
+            log.error("❌ Product.products threw: \(error.localizedDescription, privacy: .public)")
+            products = []
+            didFinishLoadingProducts = true
             state = .failed(error.localizedDescription)
         }
     }
@@ -108,11 +128,16 @@ final class SubscriptionStore: ObservableObject {
         for await result in Transaction.currentEntitlements {
             guard let transaction = verifiedTransaction(from: result) else { continue }
             guard transaction.revocationDate == nil else { continue }
+            if let expiration = transaction.expirationDate, expiration < Date() { continue }
             guard productIDs.contains(transaction.productID) else { continue }
             entitledProductIDs.insert(transaction.productID)
         }
 
+        let wasPremium = isPremium
         isPremium = entitledProductIDs.contains(Self.premiumMonthlyProductID)
+        if isPremium != wasPremium {
+            log.notice("👑 Premium status changed: \(self.isPremium)")
+        }
     }
 
     private func listenForTransactions() -> Task<Void, Never> {
