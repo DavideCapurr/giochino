@@ -37,6 +37,8 @@
 		4AF945872FA93DF300ED7248 /* AdMobBannerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4AF945862FA93DF300ED7248 /* AdMobBannerView.swift */; };
 		4AF9458A2FA93E6C00ED7248 /* GoogleMobileAds in Frameworks */ = {isa = PBXBuildFile; productRef = 4AF945892FA93E6C00ED7248 /* GoogleMobileAds */; };
 		4AF9458B2FA9400000ED7248 /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4AF9458C2FA9400000ED7248 /* SettingsView.swift */; };
+		4AF945902FB0000000ED7248 /* TrackingAuthorization.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4AF945912FB0000000ED7248 /* TrackingAuthorization.swift */; };
+		4AF945922FB0000000ED7248 /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = 4AF945932FB0000000ED7248 /* PrivacyInfo.xcprivacy */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -85,6 +87,8 @@
 		4AF945862FA93DF300ED7248 /* AdMobBannerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AdMobBannerView.swift; sourceTree = "<group>"; };
 		4AF9458B2FA93F7E00ED7248 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
 		4AF9458C2FA9400000ED7248 /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
+		4AF945912FB0000000ED7248 /* TrackingAuthorization.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TrackingAuthorization.swift; sourceTree = "<group>"; };
+		4AF945932FB0000000ED7248 /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -127,6 +131,8 @@
 			isa = PBXGroup;
 			children = (
 				4AF9458B2FA93F7E00ED7248 /* Info.plist */,
+				4AF945932FB0000000ED7248 /* PrivacyInfo.xcprivacy */,
+				4AF945912FB0000000ED7248 /* TrackingAuthorization.swift */,
 				4AF945862FA93DF300ED7248 /* AdMobBannerView.swift */,
 				4AF945842FA93D4700ED7248 /* ShiftBlast.storekit */,
 				4AF945802FA93CFC00ED7248 /* PaywallView.swift */,
@@ -292,6 +298,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				4AF945852FA93D4700ED7248 /* ShiftBlast.storekit in Resources */,
+				4AF945922FB0000000ED7248 /* PrivacyInfo.xcprivacy in Resources */,
 				0A000001000000000000000A /* Assets.xcassets in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -320,6 +327,7 @@
 				0A0000010000000000000001 /* ShiftBlastApp.swift in Sources */,
 				0A0000010000000000000002 /* GameModels.swift in Sources */,
 				4AF945872FA93DF300ED7248 /* AdMobBannerView.swift in Sources */,
+				4AF945902FB0000000ED7248 /* TrackingAuthorization.swift in Sources */,
 				0A0000010000000000000003 /* SeededGenerator.swift in Sources */,
 				0A0000010000000000000004 /* GameEngine.swift in Sources */,
 				0A0000010000000000000005 /* GameStore.swift in Sources */,
