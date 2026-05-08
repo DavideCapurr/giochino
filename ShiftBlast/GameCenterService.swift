@@ -34,8 +34,10 @@ final class GameCenterService: ObservableObject {
 
     private var pendingSubmissions: [Int] = []
 
-    func authenticate() {
-        guard authState != .authenticated, authState != .authenticating else { return }
+    func authenticate(force: Bool = false) {
+        if !force {
+            guard authState != .authenticated, authState != .authenticating else { return }
+        }
         authState = .authenticating
 
         GKLocalPlayer.local.authenticateHandler = { [weak self] viewController, error in
@@ -46,7 +48,7 @@ final class GameCenterService: ObservableObject {
                     return
                 }
                 if let error {
-                    self.authState = .unavailable(error.localizedDescription)
+                    self.authState = .unavailable(Self.friendlyMessage(for: error))
                     self.lastError = error.localizedDescription
                     log.error("GameKit auth failed: \(error.localizedDescription)")
                     return
@@ -57,10 +59,34 @@ final class GameCenterService: ObservableObject {
                     await self.flushPendingSubmissions()
                     await self.refreshAll()
                 } else {
-                    self.authState = .unavailable("Game Center disabled")
+                    self.authState = .unavailable("Sign in to Game Center in iOS Settings")
                 }
             }
         }
+    }
+
+    func retryAuthentication() {
+        authenticate(force: true)
+    }
+
+    func openSystemSettings() {
+        guard let url = URL(string: UIApplication.openSettingsURLString) else { return }
+        UIApplication.shared.open(url)
+    }
+
+    private static func friendlyMessage(for error: Error) -> String {
+        let nsError = error as NSError
+        let lowered = nsError.localizedDescription.lowercased()
+        if lowered.contains("not been authenticated") || lowered.contains("not authenticated") {
+            return "Sign in to Game Center in iOS Settings"
+        }
+        if lowered.contains("network") || lowered.contains("internet") || lowered.contains("offline") {
+            return "No connection to Game Center"
+        }
+        if lowered.contains("cancel") {
+            return "Sign-in cancelled"
+        }
+        return nsError.localizedDescription
     }
 
     func submit(score: Int) async {
@@ -86,7 +112,12 @@ final class GameCenterService: ObservableObject {
     }
 
     func refreshAll() async {
-        guard GKLocalPlayer.local.isAuthenticated else { return }
+        guard GKLocalPlayer.local.isAuthenticated else {
+            if case .authenticated = authState {
+                authState = .unavailable("Sign in to Game Center in iOS Settings")
+            }
+            return
+        }
         isLoadingGlobal = true
         defer { isLoadingGlobal = false }
 

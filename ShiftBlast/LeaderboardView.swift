@@ -148,6 +148,18 @@ private struct PersonalContent: View {
         VStack(spacing: 12) {
             HeroBestCard(gameCenter: gameCenter, bestScore: bestScore)
 
+            if case .unavailable = gameCenter.authState {
+                EmptyCard(
+                    icon: "person.crop.circle.badge.exclamationmark",
+                    title: "Not signed in to Game Center",
+                    subtitle: "Sign in to publish your scores and see your global rank.",
+                    action: EmptyCard.Action(
+                        primary: ("OPEN SETTINGS", { gameCenter.openSystemSettings() }),
+                        secondary: ("RETRY", { gameCenter.retryAuthentication() })
+                    )
+                )
+            }
+
             if localEntries.isEmpty {
                 EmptyCard(
                     icon: "tray",
@@ -338,7 +350,8 @@ private struct GlobalContent: View {
                 EmptyCard(
                     icon: emptyIcon,
                     title: emptyTitle,
-                    subtitle: emptySubtitle
+                    subtitle: emptySubtitle,
+                    action: emptyAction
                 )
             } else {
                 VStack(spacing: 6) {
@@ -377,6 +390,18 @@ private struct GlobalContent: View {
         case .authenticated: return "Be the first to publish a run"
         case .authenticating, .idle: return "Checking Game Center authentication"
         case .unavailable(let reason): return reason
+        }
+    }
+
+    private var emptyAction: EmptyCard.Action? {
+        switch gameCenter.authState {
+        case .authenticated, .authenticating, .idle:
+            return nil
+        case .unavailable:
+            return EmptyCard.Action(
+                primary: ("OPEN SETTINGS", { gameCenter.openSystemSettings() }),
+                secondary: ("RETRY", { gameCenter.retryAuthentication() })
+            )
         }
     }
 }
@@ -495,12 +520,23 @@ private struct SectionHeader: View {
 }
 
 private struct EmptyCard: View {
+    struct Action {
+        let primary: (label: String, handler: () -> Void)
+        let secondary: (label: String, handler: () -> Void)?
+
+        init(primary: (String, () -> Void), secondary: (String, () -> Void)? = nil) {
+            self.primary = primary
+            self.secondary = secondary
+        }
+    }
+
     let icon: String
     let title: String
     let subtitle: String
+    var action: Action? = nil
 
     var body: some View {
-        VStack(spacing: 8) {
+        VStack(spacing: 12) {
             Image(systemName: icon)
                 .font(.system(size: 24, weight: .light))
                 .foregroundStyle(.white.opacity(0.4))
@@ -511,6 +547,35 @@ private struct EmptyCard: View {
                 .font(.system(size: 11, weight: .semibold, design: .rounded))
                 .foregroundStyle(.white.opacity(0.4))
                 .multilineTextAlignment(.center)
+                .padding(.horizontal, 18)
+
+            if let action {
+                HStack(spacing: 8) {
+                    Button(action: action.primary.handler) {
+                        Text(action.primary.label)
+                            .font(.system(size: 12, weight: .black, design: .rounded))
+                            .foregroundStyle(.black)
+                            .padding(.horizontal, 14)
+                            .padding(.vertical, 9)
+                            .background(Color.shiftYellow, in: Capsule())
+                    }
+                    .buttonStyle(.plain)
+
+                    if let secondary = action.secondary {
+                        Button(action: secondary.handler) {
+                            Text(secondary.label)
+                                .font(.system(size: 12, weight: .black, design: .rounded))
+                                .foregroundStyle(.white.opacity(0.75))
+                                .padding(.horizontal, 12)
+                                .padding(.vertical, 9)
+                                .background(Color.white.opacity(0.08), in: Capsule())
+                                .overlay(Capsule().stroke(Color.white.opacity(0.12), lineWidth: 1))
+                        }
+                        .buttonStyle(.plain)
+                    }
+                }
+                .padding(.top, 4)
+            }
         }
         .frame(maxWidth: .infinity)
         .padding(.vertical, 28)
