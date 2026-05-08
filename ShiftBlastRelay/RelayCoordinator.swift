@@ -15,7 +15,6 @@ final class RelayCoordinator: ObservableObject {
     @Published var loginItemEnabled: Bool = false
 
     private let bookmarkStore = BookmarkStore()
-    private var processWatcher: ProcessWatcher?
     private var sessionWatcher: SessionFileWatcher?
     private var lastSignalTime: Date = .distantPast
     private let throttle: TimeInterval = 2.0
@@ -29,9 +28,7 @@ final class RelayCoordinator: ObservableObject {
     }
 
     func stop() {
-        processWatcher?.stop()
         sessionWatcher?.stop()
-        processWatcher = nil
         sessionWatcher = nil
     }
 
