@@ -13,6 +13,7 @@ final class GameViewModel: ObservableObject {
     private var spawnMarkerTask: Task<Void, Never>?
     private var isResolvingMove = false
     private var agentWatcher: AgentSignalWatcher?
+    private weak var gameCenter: GameCenterService?
 
     @Published
     var state: GameState
@@ -110,6 +111,10 @@ final class GameViewModel: ObservableObject {
         resumeInterruptedMoveIfNeeded()
     }
 
+    func bindGameCenter(_ service: GameCenterService) {
+        gameCenter = service
+    }
+
     func toggleMute() {
         isMuted.toggle()
         feedback.isMuted = isMuted
@@ -188,6 +193,10 @@ final class GameViewModel: ObservableObject {
                 _ = GameEngine.spawnAfterMove(in: &self.state)
                 if self.state.isGameOver {
                     GameEngine.recordFinishedRun(in: &self.state)
+                    let finalScore = self.state.score
+                    if let gameCenter = self.gameCenter {
+                        Task { await gameCenter.submit(score: finalScore) }
+                    }
                 }
                 self.isResolvingMove = false
                 self.store.save(self.state)

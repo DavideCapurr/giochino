@@ -3,6 +3,7 @@ import SwiftUI
 struct ContentView: View {
     @ObservedObject var viewModel: GameViewModel
     @EnvironmentObject var subscriptionStore: SubscriptionStore
+    @EnvironmentObject var gameCenter: GameCenterService
     @State private var isPaywallPresented = false
     @State private var isSettingsPresented = false
 
@@ -77,7 +78,8 @@ struct ContentView: View {
                         bestScore: viewModel.state.bestScore,
                         moves: viewModel.state.moves,
                         leaderboard: viewModel.state.leaderboard,
-                        restart: viewModel.restart
+                        restart: viewModel.restart,
+                        gameCenter: gameCenter
                     )
                 }
 
@@ -573,34 +575,52 @@ private struct StatPill: View {
     }
 }
 
-// MARK: - LeaderboardStrip
+// MARK: - LeaderboardPanel
 
-private struct LeaderboardStrip: View {
-    let entries: [LeaderboardEntry]
-    let currentScore: Int
+private enum LeaderboardTab: String, CaseIterable {
+    case personal
+    case global
 
-    private var displayEntries: [LeaderboardEntry] {
-        if entries.isEmpty {
-            return [LeaderboardEntry(score: max(currentScore, 0), moves: 0, blocksLeft: 0)]
+    var label: String {
+        switch self {
+        case .personal: return "PERSONAL"
+        case .global: return "GLOBAL"
         }
-        return Array(entries.prefix(3))
     }
+}
+
+private struct LeaderboardPanel: View {
+    let localEntries: [LeaderboardEntry]
+    let currentScore: Int
+    @ObservedObject var gameCenter: GameCenterService
+    @State private var tab: LeaderboardTab = .personal
 
     var body: some View {
         VStack(spacing: 8) {
-            HStack {
-                Text("LEADERBOARD")
-                    .font(.system(size: 11, weight: .black, design: .rounded))
-                    .foregroundStyle(.white.opacity(0.45))
-                Spacer()
-                Text("TOP 3")
-                    .font(.system(size: 10, weight: .bold, design: .rounded))
+            HStack(spacing: 6) {
+                ForEach(LeaderboardTab.allCases, id: \.self) { item in
+                    TabPill(label: item.label, isSelected: item == tab) {
+                        tab = item
+                    }
+                }
+                Spacer(minLength: 6)
+                Text(headerHint)
+                    .font(.system(size: 9, weight: .bold, design: .rounded))
                     .foregroundStyle(.white.opacity(0.34))
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.7)
             }
 
-            VStack(spacing: 6) {
-                ForEach(Array(displayEntries.enumerated()), id: \.element.id) { index, entry in
-                    RankRow(rank: index + 1, entry: entry, isPlaceholder: entries.isEmpty)
+            Group {
+                switch tab {
+                case .personal:
+                    PersonalSection(
+                        gameCenter: gameCenter,
+                        localEntries: localEntries,
+                        currentScore: currentScore
+                    )
+                case .global:
+                    GlobalSection(gameCenter: gameCenter)
                 }
             }
         }
@@ -611,14 +631,147 @@ private struct LeaderboardStrip: View {
                 .stroke(Color.white.opacity(0.06), lineWidth: 1)
         )
     }
+
+    private var headerHint: String {
+        switch tab {
+        case .personal: return "ME"
+        case .global: return "TOP 10 ALL-TIME"
+        }
+    }
 }
 
-// MARK: - RankRow
+private struct TabPill: View {
+    let label: String
+    let isSelected: Bool
+    let action: () -> Void
 
-private struct RankRow: View {
+    var body: some View {
+        Button(action: action) {
+            Text(label)
+                .font(.system(size: 11, weight: .black, design: .rounded))
+                .foregroundStyle(isSelected ? Color.black : .white.opacity(0.55))
+                .padding(.horizontal, 10)
+                .padding(.vertical, 5)
+                .background(
+                    isSelected ? AnyShapeStyle(Color.shiftCyan) : AnyShapeStyle(Color.white.opacity(0.06)),
+                    in: Capsule()
+                )
+        }
+        .buttonStyle(.plain)
+    }
+}
+
+private struct PersonalSection: View {
+    @ObservedObject var gameCenter: GameCenterService
+    let localEntries: [LeaderboardEntry]
+    let currentScore: Int
+
+    var body: some View {
+        VStack(spacing: 8) {
+            GameCenterBestRow(gameCenter: gameCenter, fallbackScore: currentScore)
+
+            if !localEntries.isEmpty {
+                VStack(spacing: 6) {
+                    HStack {
+                        Text("RECENT RUNS")
+                            .font(.system(size: 9, weight: .black, design: .rounded))
+                            .foregroundStyle(.white.opacity(0.38))
+                            .tracking(1)
+                        Spacer()
+                    }
+                    ForEach(Array(localEntries.prefix(3).enumerated()), id: \.element.id) { index, entry in
+                        LocalRankRow(rank: index + 1, entry: entry)
+                    }
+                }
+            }
+        }
+    }
+}
+
+private struct GameCenterBestRow: View {
+    @ObservedObject var gameCenter: GameCenterService
+    let fallbackScore: Int
+
+    var body: some View {
+        HStack(spacing: 10) {
+            Image(systemName: "rosette")
+                .font(.system(size: 13, weight: .black))
+                .foregroundStyle(Color.shiftYellow)
+
+            VStack(alignment: .leading, spacing: 1) {
+                Text("GAME CENTER BEST")
+                    .font(.system(size: 9, weight: .black, design: .rounded))
+                    .foregroundStyle(.white.opacity(0.45))
+                    .tracking(1)
+                Text(bestText)
+                    .font(.system(size: 17, weight: .black, design: .rounded))
+                    .foregroundStyle(.white)
+                    .monospacedDigit()
+            }
+
+            Spacer()
+
+            if let rank = gameCenter.personalRank {
+                VStack(alignment: .trailing, spacing: 1) {
+                    Text("RANK")
+                        .font(.system(size: 9, weight: .black, design: .rounded))
+                        .foregroundStyle(.white.opacity(0.45))
+                    Text("#\(rank)")
+                        .font(.system(size: 15, weight: .black, design: .rounded))
+                        .foregroundStyle(Color.shiftCyan)
+                        .monospacedDigit()
+                }
+            } else {
+                AuthHint(state: gameCenter.authState)
+            }
+        }
+        .padding(.horizontal, 10)
+        .padding(.vertical, 9)
+        .background(
+            LinearGradient(
+                colors: [Color.shiftYellow.opacity(0.16), Color.white.opacity(0.04)],
+                startPoint: .leading, endPoint: .trailing
+            ),
+            in: RoundedRectangle(cornerRadius: 7, style: .continuous)
+        )
+        .overlay(
+            RoundedRectangle(cornerRadius: 7, style: .continuous)
+                .stroke(Color.shiftYellow.opacity(0.22), lineWidth: 1)
+        )
+    }
+
+    private var bestText: String {
+        if let best = gameCenter.personalBest {
+            return "\(best)"
+        }
+        return fallbackScore > 0 ? "\(fallbackScore)" : "--"
+    }
+}
+
+private struct AuthHint: View {
+    let state: GameCenterAuthState
+
+    var body: some View {
+        Text(text)
+            .font(.system(size: 9, weight: .bold, design: .rounded))
+            .foregroundStyle(.white.opacity(0.4))
+            .lineLimit(2)
+            .multilineTextAlignment(.trailing)
+            .frame(maxWidth: 110)
+    }
+
+    private var text: String {
+        switch state {
+        case .idle, .authenticating: return "SIGNING IN…"
+        case .authenticated: return "NO RANK YET"
+        case .unavailable(let reason): return reason.uppercased()
+        }
+    }
+}
+
+private struct LocalRankRow: View {
     let rank: Int
     let entry: LeaderboardEntry
-    let isPlaceholder: Bool
 
     private var tint: Color {
         switch rank {
@@ -635,21 +788,147 @@ private struct RankRow: View {
                 .foregroundStyle(tint)
                 .frame(width: 28, alignment: .leading)
 
-            Text(isPlaceholder ? "NO RUNS YET" : "\(entry.score)")
-                .font(.system(size: 15, weight: .black, design: .rounded))
-                .foregroundStyle(.white.opacity(isPlaceholder ? 0.42 : 0.9))
+            Text("\(entry.score)")
+                .font(.system(size: 14, weight: .black, design: .rounded))
+                .foregroundStyle(.white.opacity(0.9))
                 .monospacedDigit()
 
             Spacer()
 
-            Text(isPlaceholder ? "--" : "\(entry.moves)M")
+            Text("\(entry.moves)M")
                 .font(.system(size: 11, weight: .bold, design: .rounded))
                 .foregroundStyle(.white.opacity(0.38))
                 .monospacedDigit()
         }
         .padding(.horizontal, 10)
-        .padding(.vertical, 8)
+        .padding(.vertical, 7)
         .background(Color.black.opacity(0.18), in: RoundedRectangle(cornerRadius: 7, style: .continuous))
+    }
+}
+
+private struct GlobalSection: View {
+    @ObservedObject var gameCenter: GameCenterService
+
+    var body: some View {
+        VStack(spacing: 6) {
+            if gameCenter.globalTop.isEmpty {
+                EmptyGlobalState(state: gameCenter.authState, isLoading: gameCenter.isLoadingGlobal)
+            } else {
+                ForEach(gameCenter.globalTop) { entry in
+                    GlobalRankRow(entry: entry)
+                }
+            }
+
+            if let rank = gameCenter.personalRank, !gameCenter.globalTop.contains(where: \.isLocalPlayer) {
+                HStack {
+                    Text("YOU")
+                        .font(.system(size: 10, weight: .black, design: .rounded))
+                        .foregroundStyle(Color.shiftCyan)
+                    Spacer()
+                    Text("#\(rank)")
+                        .font(.system(size: 12, weight: .black, design: .rounded))
+                        .foregroundStyle(Color.shiftCyan)
+                        .monospacedDigit()
+                    if let best = gameCenter.personalBest {
+                        Text("\(best)")
+                            .font(.system(size: 12, weight: .black, design: .rounded))
+                            .foregroundStyle(.white.opacity(0.85))
+                            .monospacedDigit()
+                    }
+                }
+                .padding(.horizontal, 10)
+                .padding(.vertical, 7)
+                .background(Color.shiftCyan.opacity(0.1), in: RoundedRectangle(cornerRadius: 7, style: .continuous))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 7, style: .continuous)
+                        .stroke(Color.shiftCyan.opacity(0.3), lineWidth: 1)
+                )
+                .padding(.top, 2)
+            }
+        }
+    }
+}
+
+private struct EmptyGlobalState: View {
+    let state: GameCenterAuthState
+    let isLoading: Bool
+
+    var body: some View {
+        HStack(spacing: 8) {
+            if isLoading {
+                ProgressView()
+                    .controlSize(.small)
+                    .tint(.white.opacity(0.6))
+            }
+            Text(message)
+                .font(.system(size: 11, weight: .bold, design: .rounded))
+                .foregroundStyle(.white.opacity(0.45))
+                .multilineTextAlignment(.leading)
+            Spacer()
+        }
+        .padding(.horizontal, 10)
+        .padding(.vertical, 14)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(Color.black.opacity(0.18), in: RoundedRectangle(cornerRadius: 7, style: .continuous))
+    }
+
+    private var message: String {
+        if isLoading { return "LOADING TOP 10…" }
+        switch state {
+        case .idle, .authenticating:
+            return "SIGNING IN TO GAME CENTER…"
+        case .unavailable(let reason):
+            return "GAME CENTER \(reason.uppercased())"
+        case .authenticated:
+            return "NO SCORES YET — BE THE FIRST"
+        }
+    }
+}
+
+private struct GlobalRankRow: View {
+    let entry: GlobalLeaderboardEntry
+
+    private var tint: Color {
+        if entry.isLocalPlayer { return .shiftCyan }
+        switch entry.rank {
+        case 1: return .shiftYellow
+        case 2: return .shiftPink
+        case 3: return .shiftViolet
+        default: return .white.opacity(0.6)
+        }
+    }
+
+    var body: some View {
+        HStack(spacing: 10) {
+            Text("#\(entry.rank)")
+                .font(.system(size: 12, weight: .black, design: .rounded))
+                .foregroundStyle(tint)
+                .frame(width: 28, alignment: .leading)
+                .monospacedDigit()
+
+            Text(entry.displayName)
+                .font(.system(size: 12, weight: .bold, design: .rounded))
+                .foregroundStyle(.white.opacity(entry.isLocalPlayer ? 1 : 0.78))
+                .lineLimit(1)
+                .minimumScaleFactor(0.7)
+
+            Spacer()
+
+            Text("\(entry.score)")
+                .font(.system(size: 13, weight: .black, design: .rounded))
+                .foregroundStyle(.white.opacity(entry.isLocalPlayer ? 1 : 0.85))
+                .monospacedDigit()
+        }
+        .padding(.horizontal, 10)
+        .padding(.vertical, 6)
+        .background(
+            entry.isLocalPlayer ? Color.shiftCyan.opacity(0.12) : Color.black.opacity(0.18),
+            in: RoundedRectangle(cornerRadius: 7, style: .continuous)
+        )
+        .overlay(
+            RoundedRectangle(cornerRadius: 7, style: .continuous)
+                .stroke(entry.isLocalPlayer ? Color.shiftCyan.opacity(0.4) : Color.clear, lineWidth: 1)
+        )
     }
 }
 
@@ -661,6 +940,7 @@ private struct GameOverView: View {
     let moves: Int
     let leaderboard: [LeaderboardEntry]
     let restart: () -> Void
+    @ObservedObject var gameCenter: GameCenterService
 
     var body: some View {
         ZStack {
@@ -681,7 +961,12 @@ private struct GameOverView: View {
                     StatPill(title: "MOVES", value: "\(moves)", tint: .shiftPink)
                 }
 
-                LeaderboardStrip(entries: leaderboard, currentScore: score)
+                LeaderboardPanel(
+                    localEntries: leaderboard,
+                    currentScore: score,
+                    gameCenter: gameCenter
+                )
+                .task { await gameCenter.refreshAll() }
 
                 Button(action: restart) {
                     Image(systemName: "arrow.clockwise")

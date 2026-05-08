@@ -5,14 +5,18 @@ struct ShiftBlastApp: App {
     @Environment(\.scenePhase) private var scenePhase
     @StateObject private var viewModel = GameViewModel()
     @StateObject private var subscriptionStore = SubscriptionStore()
+    @StateObject private var gameCenter = GameCenterService()
 
     var body: some Scene {
         WindowGroup {
             ContentView(viewModel: viewModel)
                 .environmentObject(subscriptionStore)
+                .environmentObject(gameCenter)
                 .task {
                     await TrackingAuthorization.requestIfNeeded()
                     await subscriptionStore.configure()
+                    gameCenter.authenticate()
+                    viewModel.bindGameCenter(gameCenter)
                 }
                 .onChange(of: subscriptionStore.isPremium) { _, premium in
                     viewModel.isAgentEnabled = premium
