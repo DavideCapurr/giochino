@@ -11,6 +11,7 @@ struct ShiftBlastApp: App {
             ContentView(viewModel: viewModel)
                 .environmentObject(subscriptionStore)
                 .task {
+                    await TrackingAuthorization.requestIfNeeded()
                     await subscriptionStore.configure()
                 }
                 .onChange(of: subscriptionStore.isPremium) { _, premium in

@@ -38,7 +38,10 @@ private struct BannerViewContainer: UIViewRepresentable {
         let banner = BannerView(adSize: adSize)
         banner.adUnitID = adUnitID
         banner.delegate = context.coordinator
-        banner.load(Request())
+        Task { @MainActor in
+            await TrackingAuthorization.requestIfNeeded()
+            banner.load(Request())
+        }
         return banner
     }
 
