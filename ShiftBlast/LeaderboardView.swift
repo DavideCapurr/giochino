@@ -9,11 +9,13 @@ struct LeaderboardView: View {
 
     enum Tab: String, CaseIterable {
         case personal
+        case friends
         case global
 
         var label: String {
             switch self {
             case .personal: return "PERSONAL"
+            case .friends: return "FRIENDS"
             case .global: return "GLOBAL"
             }
         }
@@ -42,6 +44,8 @@ struct LeaderboardView: View {
                                 bestScore: viewModel.state.bestScore,
                                 localEntries: viewModel.state.leaderboard
                             )
+                        case .friends:
+                            FriendsContent(gameCenter: gameCenter)
                         case .global:
                             GlobalContent(gameCenter: gameCenter)
                         }
@@ -133,6 +137,69 @@ struct LeaderboardView: View {
                 }
                 .buttonStyle(.plain)
             }
+        }
+    }
+}
+
+// MARK: - Friends
+
+private struct FriendsContent: View {
+    @ObservedObject var gameCenter: GameCenterService
+
+    var body: some View {
+        VStack(spacing: 12) {
+            SectionHeader(title: "FRIENDS GROUP", trailing: gameCenter.isLoadingGlobal ? "LOADING…" : "GAME CENTER")
+
+            if gameCenter.friendsTop.isEmpty {
+                EmptyCard(
+                    icon: emptyIcon,
+                    title: emptyTitle,
+                    subtitle: emptySubtitle,
+                    action: emptyAction
+                )
+            } else {
+                VStack(spacing: 6) {
+                    ForEach(gameCenter.friendsTop) { entry in
+                        GlobalRow(entry: entry)
+                    }
+                }
+            }
+        }
+    }
+
+    private var emptyIcon: String {
+        switch gameCenter.authState {
+        case .authenticated: return "person.2"
+        case .authenticating, .idle: return "arrow.triangle.2.circlepath"
+        case .unavailable: return "person.crop.circle.badge.exclamationmark"
+        }
+    }
+
+    private var emptyTitle: String {
+        switch gameCenter.authState {
+        case .authenticated: return "No friends scores yet"
+        case .authenticating, .idle: return "Signing in…"
+        case .unavailable: return "Game Center unavailable"
+        }
+    }
+
+    private var emptySubtitle: String {
+        switch gameCenter.authState {
+        case .authenticated: return "Add friends in Game Center, then their Shift Blast scores will appear here."
+        case .authenticating, .idle: return "Checking your Game Center friends group."
+        case .unavailable(let reason): return reason
+        }
+    }
+
+    private var emptyAction: EmptyCard.Action? {
+        switch gameCenter.authState {
+        case .authenticated, .authenticating, .idle:
+            return nil
+        case .unavailable:
+            return EmptyCard.Action(
+                primary: ("OPEN SETTINGS", { gameCenter.openSystemSettings() }),
+                secondary: ("RETRY", { gameCenter.retryAuthentication() })
+            )
         }
     }
 }

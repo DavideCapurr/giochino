@@ -3,6 +3,7 @@ import GameKit
 import OSLog
 import SwiftUI
 import UIKit
+import UserNotifications
 
 private let log = Logger(subsystem: "com.davide.shiftblast", category: "GameCenter")
 
@@ -29,10 +30,13 @@ final class GameCenterService: ObservableObject {
     @Published private(set) var personalBest: Int?
     @Published private(set) var personalRank: Int?
     @Published private(set) var globalTop: [GlobalLeaderboardEntry] = []
+    @Published private(set) var friendsTop: [GlobalLeaderboardEntry] = []
     @Published private(set) var lastError: String?
     @Published var isLoadingGlobal = false
 
     private var pendingSubmissions: [Int] = []
+    private let notificationCenter = UNUserNotificationCenter.current()
+    private let friendOvertakeNotificationKey = "shiftblast.friend-overtake-notification"
 
     func authenticate(force: Bool = false) {
         if !force {
@@ -72,6 +76,17 @@ final class GameCenterService: ObservableObject {
     func openSystemSettings() {
         guard let url = URL(string: UIApplication.openSettingsURLString) else { return }
         UIApplication.shared.open(url)
+    }
+
+    func requestNotificationPermissionIfNeeded() async {
+        let settings = await notificationCenter.notificationSettings()
+        guard settings.authorizationStatus == .notDetermined else { return }
+
+        do {
+            _ = try await notificationCenter.requestAuthorization(options: [.alert, .sound, .badge])
+        } catch {
+            log.error("Notification authorization failed: \(error.localizedDescription)")
+        }
     }
 
     private static func friendlyMessage(for error: Error) -> String {
@@ -126,10 +141,22 @@ final class GameCenterService: ObservableObject {
             guard let board = boards.first else { return }
 
             let result = try await board.loadEntries(for: .global, timeScope: .allTime, range: NSRange(location: 1, length: 10))
+            let friendsResult = try await board.loadEntries(for: .friendsOnly, timeScope: .allTime, range: NSRange(location: 1, length: 10))
             let topEntries = result.1
+            let friendEntries = friendsResult.1
             let localEntry = result.0
 
             globalTop = topEntries.map { entry in
+                GlobalLeaderboardEntry(
+                    id: entry.player.gamePlayerID,
+                    rank: entry.rank,
+                    displayName: entry.player.displayName,
+                    score: entry.score,
+                    isLocalPlayer: entry.player.gamePlayerID == GKLocalPlayer.local.gamePlayerID
+                )
+            }
+
+            friendsTop = friendEntries.map { entry in
                 GlobalLeaderboardEntry(
                     id: entry.player.gamePlayerID,
                     rank: entry.rank,
@@ -146,6 +173,8 @@ final class GameCenterService: ObservableObject {
                 personalBest = nil
                 personalRank = nil
             }
+
+            await notifyIfFriendMovedAhead()
         } catch {
             lastError = error.localizedDescription
             log.error("GameKit refresh failed: \(error.localizedDescription)")
@@ -158,6 +187,50 @@ final class GameCenterService: ObservableObject {
         pendingSubmissions.removeAll()
         for score in scores {
             await submit(score: score)
+        }
+    }
+
+    private func notifyIfFriendMovedAhead() async {
+        guard let personalBest, personalBest > 0 else { return }
+        guard let friend = friendsTop
+            .filter({ !$0.isLocalPlayer && $0.score > personalBest })
+            .max(by: { $0.score < $1.score })
+        else { return }
+
+        let notificationKey = "\(friend.id):\(friend.score):\(personalBest)"
+        guard UserDefaults.standard.string(forKey: friendOvertakeNotificationKey) != notificationKey else { return }
+        UserDefaults.standard.set(notificationKey, forKey: friendOvertakeNotificationKey)
+
+        let settings = await notificationCenter.notificationSettings()
+        switch settings.authorizationStatus {
+        case .notDetermined:
+            await requestNotificationPermissionIfNeeded()
+            let updatedStatus = await notificationCenter.notificationSettings().authorizationStatus
+            guard updatedStatus == .authorized || updatedStatus == .provisional || updatedStatus == .ephemeral else { return }
+        case .authorized, .provisional, .ephemeral:
+            break
+        case .denied:
+            return
+        @unknown default:
+            return
+        }
+
+        let content = UNMutableNotificationContent()
+        content.title = "Friend pulled ahead"
+        content.body = "\(friend.displayName) passed you with \(friend.score). Take it back."
+        content.sound = .default
+        content.badge = 1
+
+        let request = UNNotificationRequest(
+            identifier: "friend-overtake-\(friend.id)-\(friend.score)",
+            content: content,
+            trigger: nil
+        )
+
+        do {
+            try await notificationCenter.add(request)
+        } catch {
+            log.error("Friend overtake notification failed: \(error.localizedDescription)")
         }
     }
 

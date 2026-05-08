@@ -14,6 +14,7 @@ struct ShiftBlastApp: App {
                 .environmentObject(gameCenter)
                 .task {
                     await subscriptionStore.configure()
+                    await gameCenter.requestNotificationPermissionIfNeeded()
                     gameCenter.authenticate()
                     viewModel.bindGameCenter(gameCenter)
                 }
@@ -25,6 +26,7 @@ struct ShiftBlastApp: App {
                         viewModel.persistForInterruption()
                     } else if !viewModel.isAgentPaused {
                         viewModel.resumeInterruptedMoveIfNeeded()
+                        Task { await gameCenter.refreshAll() }
                     }
                 }
         }

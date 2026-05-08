@@ -64,6 +64,15 @@ struct ContentView: View {
                         .transition(.opacity)
                 }
 
+                if let notice = viewModel.recordNotice {
+                    RecordToast(notice: notice)
+                        .padding(.horizontal, 14)
+                        .padding(.top, 86)
+                        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+                        .allowsHitTesting(false)
+                        .transition(.move(edge: .top).combined(with: .opacity))
+                }
+
                 if viewModel.isAgentPaused {
                     AgentPauseOverlay(
                         backToWork: viewModel.snoozeFromAgentPause,
@@ -98,6 +107,7 @@ struct ContentView: View {
             .animation(.spring(response: 0.32, dampingFraction: 0.78), value: viewModel.isAgentPaused)
             .animation(.easeInOut(duration: 0.22), value: viewModel.isSnoozed)
             .animation(.easeInOut(duration: 0.25), value: isSettingsPresented)
+            .animation(.spring(response: 0.28, dampingFraction: 0.82), value: viewModel.recordNotice?.id)
             .fullScreenCover(isPresented: $isPaywallPresented) {
                 PaywallView(subscriptionStore: subscriptionStore, dismiss: { isPaywallPresented = false })
             }
@@ -117,6 +127,68 @@ struct ContentView: View {
                     viewModel.swipe(height > 0 ? .down : .up)
                 }
             }
+    }
+}
+
+// MARK: - RecordToast
+
+private struct RecordToast: View {
+    let notice: RecordNotice
+
+    private var tint: Color {
+        switch notice.kind {
+        case .near: return .shiftYellow
+        case .passed: return .shiftCyan
+        }
+    }
+
+    private var iconName: String {
+        switch notice.kind {
+        case .near: return "scope"
+        case .passed: return "rosette"
+        }
+    }
+
+    var body: some View {
+        HStack(spacing: 10) {
+            Image(systemName: iconName)
+                .font(.system(size: 15, weight: .black))
+                .foregroundStyle(Color.black)
+                .frame(width: 30, height: 30)
+                .background(tint, in: RoundedRectangle(cornerRadius: 7, style: .continuous))
+                .shadow(color: tint.opacity(0.55), radius: 12)
+
+            VStack(alignment: .leading, spacing: 2) {
+                Text(notice.title)
+                    .font(.system(size: 12, weight: .black, design: .rounded))
+                    .foregroundStyle(.white)
+                    .tracking(1)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.72)
+                Text(notice.detail)
+                    .font(.system(size: 11, weight: .bold, design: .rounded))
+                    .foregroundStyle(tint.opacity(0.9))
+                    .monospacedDigit()
+                    .lineLimit(1)
+            }
+
+            Spacer(minLength: 6)
+        }
+        .padding(.horizontal, 10)
+        .padding(.vertical, 9)
+        .background(
+            LinearGradient(
+                colors: [tint.opacity(0.18), Color.white.opacity(0.055)],
+                startPoint: .leading,
+                endPoint: .trailing
+            ),
+            in: RoundedRectangle(cornerRadius: 8, style: .continuous)
+        )
+        .overlay(
+            RoundedRectangle(cornerRadius: 8, style: .continuous)
+                .stroke(tint.opacity(0.28), lineWidth: 1)
+        )
+        .shadow(color: tint.opacity(0.14), radius: 20, y: 8)
     }
 }
 
@@ -579,11 +651,13 @@ private struct StatPill: View {
 
 private enum LeaderboardTab: String, CaseIterable {
     case personal
+    case friends
     case global
 
     var label: String {
         switch self {
         case .personal: return "PERSONAL"
+        case .friends: return "FRIENDS"
         case .global: return "GLOBAL"
         }
     }
@@ -619,6 +693,8 @@ private struct LeaderboardPanel: View {
                         localEntries: localEntries,
                         currentScore: currentScore
                     )
+                case .friends:
+                    FriendsSection(gameCenter: gameCenter)
                 case .global:
                     GlobalSection(gameCenter: gameCenter)
                 }
@@ -635,6 +711,7 @@ private struct LeaderboardPanel: View {
     private var headerHint: String {
         switch tab {
         case .personal: return "ME"
+        case .friends: return "GAME CENTER FRIENDS"
         case .global: return "TOP 10 ALL-TIME"
         }
     }
@@ -806,6 +883,22 @@ private struct LocalRankRow: View {
     }
 }
 
+private struct FriendsSection: View {
+    @ObservedObject var gameCenter: GameCenterService
+
+    var body: some View {
+        VStack(spacing: 6) {
+            if gameCenter.friendsTop.isEmpty {
+                EmptyGlobalState(state: gameCenter.authState, isLoading: gameCenter.isLoadingGlobal, scope: .friends)
+            } else {
+                ForEach(gameCenter.friendsTop.prefix(5)) { entry in
+                    GlobalRankRow(entry: entry)
+                }
+            }
+        }
+    }
+}
+
 private struct GlobalSection: View {
     @ObservedObject var gameCenter: GameCenterService
 
@@ -850,8 +943,14 @@ private struct GlobalSection: View {
 }
 
 private struct EmptyGlobalState: View {
+    enum Scope {
+        case friends
+        case global
+    }
+
     let state: GameCenterAuthState
     let isLoading: Bool
+    var scope: Scope = .global
 
     var body: some View {
         HStack(spacing: 8) {
@@ -873,14 +972,14 @@ private struct EmptyGlobalState: View {
     }
 
     private var message: String {
-        if isLoading { return "LOADING TOP 10…" }
+        if isLoading { return scope == .friends ? "LOADING FRIENDS…" : "LOADING TOP 10…" }
         switch state {
         case .idle, .authenticating:
             return "SIGNING IN TO GAME CENTER…"
         case .unavailable(let reason):
             return "GAME CENTER \(reason.uppercased())"
         case .authenticated:
-            return "NO SCORES YET — BE THE FIRST"
+            return scope == .friends ? "NO FRIENDS SCORES YET" : "NO SCORES YET — BE THE FIRST"
         }
     }
 }

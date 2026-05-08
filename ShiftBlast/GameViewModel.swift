@@ -11,9 +11,12 @@ final class GameViewModel: ObservableObject {
     private var completionTask: Task<Void, Never>?
     private var cleanupTask: Task<Void, Never>?
     private var spawnMarkerTask: Task<Void, Never>?
+    private var recordNoticeTask: Task<Void, Never>?
     private var isResolvingMove = false
     private var agentWatcher: AgentSignalWatcher?
     private weak var gameCenter: GameCenterService?
+    private var runStartingBestScore = 0
+    private var announcedRecordMilestones: Set<String> = []
 
     @Published
     var state: GameState
@@ -27,6 +30,9 @@ final class GameViewModel: ObservableObject {
     @Published
     var isMuted: Bool = false
 
+    @Published
+    var recordNotice: RecordNotice?
+
     @Published var isAgentEnabled: Bool = false {
         didSet { updateAgentWatcher() }
     }
@@ -38,6 +44,7 @@ final class GameViewModel: ObservableObject {
             state = GameEngine.newGame()
             store.save(state)
         }
+        runStartingBestScore = state.bestScore
         resumeInterruptedMoveIfNeeded()
     }
 
@@ -45,6 +52,7 @@ final class GameViewModel: ObservableObject {
         completionTask?.cancel()
         cleanupTask?.cancel()
         spawnMarkerTask?.cancel()
+        recordNoticeTask?.cancel()
         agentWatcher?.stop()
     }
 
@@ -62,6 +70,9 @@ final class GameViewModel: ObservableObject {
         cleanupTask?.cancel()
         spawnMarkerTask?.cancel()
         isResolvingMove = false
+        runStartingBestScore = state.bestScore
+        announcedRecordMilestones = []
+        recordNotice = nil
         state = GameEngine.newGame(bestScore: state.bestScore, leaderboard: state.leaderboard)
         store.save(state)
     }
@@ -174,7 +185,9 @@ final class GameViewModel: ObservableObject {
     private func completeMove() {
         guard state.activeMove != nil else { return }
         isResolvingMove = true
+        let previousScore = state.score
         let outcome = GameEngine.finishActiveMove(in: &state)
+        evaluateRecordNotice(previousScore: previousScore)
         if !outcome.clearedLines.isEmpty {
             feedback.clear()
             spawnAfterDelay(0.16)
@@ -190,7 +203,9 @@ final class GameViewModel: ObservableObject {
             try? await Task.sleep(nanoseconds: UInt64(delay * 1_000_000_000))
             await MainActor.run {
                 guard let self else { return }
+                let previousScore = self.state.score
                 _ = GameEngine.spawnAfterMove(in: &self.state)
+                self.evaluateRecordNotice(previousScore: previousScore)
                 if self.state.isGameOver {
                     GameEngine.recordFinishedRun(in: &self.state)
                     let finalScore = self.state.score
@@ -203,6 +218,117 @@ final class GameViewModel: ObservableObject {
                 self.clearSpawnMarkersAfterDelay()
             }
         }
+    }
+
+    private func evaluateRecordNotice(previousScore: Int) {
+        let currentScore = state.score
+        guard currentScore > previousScore else { return }
+
+        let targets = recordTargets()
+        for target in targets where target.score > 0 {
+            if previousScore < target.score, currentScore >= target.score {
+                announceRecordNotice(
+                    key: "\(target.id):passed",
+                    notice: RecordNotice(
+                        kind: .passed,
+                        title: target.passedTitle,
+                        detail: "\(currentScore) / \(target.score)"
+                    )
+                )
+                return
+            }
+
+            let nearScore = max(1, Int((Double(target.score) * 0.9).rounded(.down)))
+            if previousScore < nearScore, currentScore >= nearScore, currentScore < target.score {
+                announceRecordNotice(
+                    key: "\(target.id):near",
+                    notice: RecordNotice(
+                        kind: .near,
+                        title: target.nearTitle,
+                        detail: "\(target.score - currentScore) TO GO"
+                    )
+                )
+                return
+            }
+        }
+    }
+
+    private func announceRecordNotice(key: String, notice: RecordNotice) {
+        guard announcedRecordMilestones.insert(key).inserted else { return }
+        recordNoticeTask?.cancel()
+        recordNotice = notice
+        recordNoticeTask = Task { [weak self] in
+            try? await Task.sleep(nanoseconds: 2_600_000_000)
+            await MainActor.run {
+                guard self?.recordNotice?.id == notice.id else { return }
+                self?.recordNotice = nil
+            }
+        }
+    }
+
+    private func recordTargets() -> [RecordTarget] {
+        var targets: [RecordTarget] = []
+        let bestAtRunStart = max(runStartingBestScore, state.leaderboard.map(\.score).max() ?? 0)
+        if bestAtRunStart > 0 {
+            targets.append(
+                RecordTarget(
+                    id: "local-best",
+                    score: bestAtRunStart + 1,
+                    nearTitle: "LOCAL BEST IN RANGE",
+                    passedTitle: "NEW LOCAL BEST"
+                )
+            )
+        }
+
+        if let gameCenterBest = gameCenter?.personalBest, gameCenterBest > bestAtRunStart {
+            targets.append(
+                RecordTarget(
+                    id: "game-center-best",
+                    score: gameCenterBest + 1,
+                    nearTitle: "GAME CENTER BEST IN RANGE",
+                    passedTitle: "NEW GAME CENTER BEST"
+                )
+            )
+        }
+
+        if let rivals = gameCenter?.globalTop {
+            targets.append(
+                contentsOf: rivals
+                    .filter { !$0.isLocalPlayer && $0.score > 0 }
+                    .map { rival in
+                        RecordTarget(
+                            id: "global-\(rival.id)-\(rival.rank)",
+                            score: rival.score + 1,
+                            nearTitle: "RIVAL #\(rival.rank) IN RANGE",
+                            passedTitle: "PASSED \(rival.displayName.uppercased())"
+                        )
+                    }
+                )
+        }
+
+        if let friends = gameCenter?.friendsTop {
+            targets.append(
+                contentsOf: friends
+                    .filter { !$0.isLocalPlayer && $0.score > 0 }
+                    .map { friend in
+                        RecordTarget(
+                            id: "friend-\(friend.id)-\(friend.rank)",
+                            score: friend.score + 1,
+                            nearTitle: "FRIEND #\(friend.rank) IN RANGE",
+                            passedTitle: "PASSED \(friend.displayName.uppercased())"
+                        )
+                    }
+                )
+        }
+
+        return targets.sorted { $0.score < $1.score }
+    }
+
+    private struct RecordTarget {
+        var id: String
+        var score: Int
+        var nearTitle: String
+        var passedTitle: String
     }
 
     private func clearSpawnMarkersAfterDelay() {

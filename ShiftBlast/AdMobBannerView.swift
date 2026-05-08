@@ -7,12 +7,16 @@ enum AdMobConfiguration {
     static let testBannerAdUnitID = "ca-app-pub-3940256099942544/2435281174"
     static let productionBannerAdUnitID = "ca-app-pub-2326857958249865/2629125814"
 
-    static var bannerAdUnitID: String {
+    static var usesTestAds: Bool {
         #if DEBUG
-        testBannerAdUnitID
+        true
         #else
-        productionBannerAdUnitID
+        false
         #endif
+    }
+
+    static var bannerAdUnitID: String {
+        usesTestAds ? testBannerAdUnitID : productionBannerAdUnitID
     }
 }
 
@@ -76,12 +80,14 @@ private enum AdMobStartup {
     private static var didStartMobileAds = false
 
     static func prepareForAdRequests(from viewController: UIViewController?) async -> Bool {
-        await gatherConsent(from: viewController)
-        guard ConsentInformation.shared.canRequestAds else {
-            #if DEBUG
-            print("AdMob cannot request ads yet: consent is not available.")
-            #endif
-            return false
+        if !AdMobConfiguration.usesTestAds {
+            await gatherConsent(from: viewController)
+            guard ConsentInformation.shared.canRequestAds else {
+                #if DEBUG
+                print("AdMob cannot request ads yet: consent is not available.")
+                #endif
+                return false
+            }
         }
 
         await TrackingAuthorization.requestIfNeeded()

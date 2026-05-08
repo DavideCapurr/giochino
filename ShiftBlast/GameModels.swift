@@ -49,6 +49,18 @@ struct LeaderboardEntry: Identifiable, Codable, Hashable, Equatable {
     }
 }
 
+struct RecordNotice: Identifiable, Hashable, Equatable {
+    enum Kind: Hashable {
+        case near
+        case passed
+    }
+
+    let id = UUID()
+    var kind: Kind
+    var title: String
+    var detail: String
+}
+
 struct ClearSummary: Codable, Hashable, Equatable {
     var lineCount: Int
     var scoreDelta: Int
