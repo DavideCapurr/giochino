@@ -298,9 +298,12 @@ final class GameEngineTests: XCTestCase {
 
         XCTAssertEqual(burst, OverdriveSummary(clearedCount: 3, line: .row(1), scoreDelta: 225))
         XCTAssertEqual(state.surge, 30)
+        XCTAssertEqual(state.clearingBlockIDs.count, 3)
+        XCTAssertEqual(state.blocks.count, 4)
+        XCTAssertEqual(state.score, 225)
+        GameEngine.removeClearedBlocks(in: &state)
         XCTAssertEqual(state.blocks.count, 1)
         XCTAssertEqual(state.blocks.first?.position, GridPoint(row: 3, column: 0))
-        XCTAssertEqual(state.score, 225)
     }
 
     func testRecordFinishedRunKeepsLeaderboardSorted() {
