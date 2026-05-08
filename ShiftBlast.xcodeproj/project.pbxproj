@@ -39,6 +39,7 @@
 		4AF9458B2FA9400000ED7248 /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4AF9458C2FA9400000ED7248 /* SettingsView.swift */; };
 		4AF945902FB0000000ED7248 /* TrackingAuthorization.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4AF945912FB0000000ED7248 /* TrackingAuthorization.swift */; };
 		4AF945922FB0000000ED7248 /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = 4AF945932FB0000000ED7248 /* PrivacyInfo.xcprivacy */; };
+		4AF945942FB0000000ED7248 /* LegalLinks.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4AF945952FB0000000ED7248 /* LegalLinks.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -89,6 +90,7 @@
 		4AF9458C2FA9400000ED7248 /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
 		4AF945912FB0000000ED7248 /* TrackingAuthorization.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TrackingAuthorization.swift; sourceTree = "<group>"; };
 		4AF945932FB0000000ED7248 /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
+		4AF945952FB0000000ED7248 /* LegalLinks.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LegalLinks.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -133,6 +135,7 @@
 				4AF9458B2FA93F7E00ED7248 /* Info.plist */,
 				4AF945932FB0000000ED7248 /* PrivacyInfo.xcprivacy */,
 				4AF945912FB0000000ED7248 /* TrackingAuthorization.swift */,
+				4AF945952FB0000000ED7248 /* LegalLinks.swift */,
 				4AF945862FA93DF300ED7248 /* AdMobBannerView.swift */,
 				4AF945842FA93D4700ED7248 /* ShiftBlast.storekit */,
 				4AF945802FA93CFC00ED7248 /* PaywallView.swift */,
@@ -328,6 +331,7 @@
 				0A0000010000000000000002 /* GameModels.swift in Sources */,
 				4AF945872FA93DF300ED7248 /* AdMobBannerView.swift in Sources */,
 				4AF945902FB0000000ED7248 /* TrackingAuthorization.swift in Sources */,
+				4AF945942FB0000000ED7248 /* LegalLinks.swift in Sources */,
 				0A0000010000000000000003 /* SeededGenerator.swift in Sources */,
 				0A0000010000000000000004 /* GameEngine.swift in Sources */,
 				0A0000010000000000000005 /* GameStore.swift in Sources */,

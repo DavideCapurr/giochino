@@ -45,6 +45,8 @@ struct SettingsView: View {
             aiSection
             Divider().background(Color.white.opacity(0.08))
             gameSection
+            Divider().background(Color.white.opacity(0.08))
+            legalSection
             closeButton
         }
     }
@@ -216,6 +218,47 @@ struct SettingsView: View {
                 EmptyView()
             }
         }
+    }
+
+    // MARK: - Legal
+
+    private var legalSection: some View {
+        VStack(spacing: 10) {
+            SettingsRow(
+                icon: "lock.shield.fill",
+                iconTint: .shiftCyan,
+                title: "PRIVACY POLICY",
+                subtitle: "How your data is handled"
+            ) {
+                Button {
+                    openURL(LegalLinks.privacyURL)
+                } label: {
+                    legalChip("OPEN")
+                }
+            }
+
+            SettingsRow(
+                icon: "doc.text.fill",
+                iconTint: .nightPurple,
+                title: "TERMS OF USE",
+                subtitle: "Subscription terms & EULA"
+            ) {
+                Button {
+                    openURL(LegalLinks.termsURL)
+                } label: {
+                    legalChip("OPEN")
+                }
+            }
+        }
+    }
+
+    private func legalChip(_ text: String) -> some View {
+        Text(text)
+            .font(.system(size: 11, weight: .black, design: .rounded))
+            .foregroundStyle(.white.opacity(0.6))
+            .padding(.horizontal, 10)
+            .padding(.vertical, 6)
+            .background(Color.white.opacity(0.08), in: Capsule())
     }
 
     // MARK: - Close

@@ -245,8 +245,8 @@ private struct FeatureRow: View {
 
 // MARK: - Constants
 
-private enum PaywallConstants {
-    static let termsURL = URL(string: "https://www.apple.com/legal/internet-services/itunes/dev/stditems2.html")!
-    static let privacyURL = URL(string: "https://shiftblast.app/privacy")!
-    static let manageSubscriptionURL = URL(string: "https://apps.apple.com/account/subscriptions")!
+enum PaywallConstants {
+    static let termsURL = LegalLinks.termsURL
+    static let privacyURL = LegalLinks.privacyURL
+    static let manageSubscriptionURL = LegalLinks.manageSubscriptionURL
 }
