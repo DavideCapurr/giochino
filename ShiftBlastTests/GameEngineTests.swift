@@ -44,8 +44,8 @@ final class GameEngineTests: XCTestCase {
         let result = GameEngine.clearCompletedLines(in: &state)
 
         XCTAssertEqual(result.lines, [.row(3)])
-        let multiplier = GameEngine.pointMultiplier(forVictories: 1)
-        XCTAssertEqual(result.scoreDelta, Int((300.0 * multiplier).rounded()))
+        let yield = GameEngine.yield(forTally: 1)
+        XCTAssertEqual(result.scoreDelta, Int((300.0 * yield).rounded()))
         XCTAssertEqual(state.clearingBlockIDs.count, 8)
         GameEngine.removeClearedBlocks(in: &state)
         XCTAssertTrue(state.blocks.isEmpty)
@@ -60,9 +60,9 @@ final class GameEngineTests: XCTestCase {
         let result = GameEngine.clearCompletedLines(in: &state)
 
         XCTAssertEqual(Set(result.lines), [.row(0), .column(0)])
-        let multiplier = GameEngine.pointMultiplier(forVictories: 2)
-        XCTAssertEqual(result.scoreDelta, Int((1190.0 * multiplier).rounded()))
-        XCTAssertEqual(state.lastClear, ClearSummary(lineCount: 2, scoreDelta: result.scoreDelta, bonus: 590, streak: 2, flowGained: 96, pointMultiplier: multiplier))
+        let yield = GameEngine.yield(forTally: 2)
+        XCTAssertEqual(result.scoreDelta, Int((1100.0 * yield).rounded()))
+        XCTAssertEqual(state.lastClear, ClearSummary(lineCount: 2, scoreDelta: result.scoreDelta, bonus: 500, chain: 1, surgeGained: 91, yield: yield))
         GameEngine.removeClearedBlocks(in: &state)
         XCTAssertEqual(state.score, result.scoreDelta)
     }
@@ -76,27 +76,27 @@ final class GameEngineTests: XCTestCase {
         let result = GameEngine.clearCompletedLines(in: &state)
 
         XCTAssertEqual(Set(result.lines), [.row(0), .column(0), .column(1)])
-        let multiplier = GameEngine.pointMultiplier(forVictories: 3)
-        XCTAssertEqual(result.scoreDelta, Int((2330.0 * multiplier).rounded()))
-        XCTAssertEqual(state.lastClear, ClearSummary(lineCount: 3, scoreDelta: result.scoreDelta, bonus: 1430, streak: 3, flowGained: 175, pointMultiplier: multiplier))
+        let yield = GameEngine.yield(forTally: 3)
+        XCTAssertEqual(result.scoreDelta, Int((2150.0 * yield).rounded()))
+        XCTAssertEqual(state.lastClear, ClearSummary(lineCount: 3, scoreDelta: result.scoreDelta, bonus: 1250, chain: 1, surgeGained: 165, yield: yield))
     }
 
-    func testXpMultiplierIncreasesWithVictoriesAndIgnoresFlowDrops() {
+    func testYieldIncreasesWithTallyAndIgnoresSurgeDrops() {
         var state = fixture(blocks: (0..<8).map {
             GameBlock(position: GridPoint(row: 2, column: $0), tone: .cyan)
         })
-        state.victories = 24
-        state.flowEnergy = 75
+        state.tally = 24
+        state.surge = 75
 
         let result = GameEngine.clearCompletedLines(in: &state)
 
-        let expectedMultiplier = GameEngine.pointMultiplier(forVictories: 25)
-        XCTAssertEqual(result.scoreDelta, Int((300.0 * expectedMultiplier).rounded()))
-        XCTAssertEqual(state.lastClear?.pointMultiplier, expectedMultiplier)
-        XCTAssertEqual(GameEngine.formattedMultiplier(GameEngine.pointMultiplier(forVictories: state.victories)), "1.50x")
+        let expectedYield = GameEngine.yield(forTally: 25)
+        XCTAssertEqual(result.scoreDelta, Int((300.0 * expectedYield).rounded()))
+        XCTAssertEqual(state.lastClear?.yield, expectedYield)
+        XCTAssertEqual(GameEngine.formattedYield(GameEngine.yield(forTally: state.tally)), "1.50x")
     }
 
-    func testEmptySwipeDrainsSignalAndShowsEvent() {
+    func testDeadSwipeDrainsPulseAndShowsEvent() {
         var state = fixture(blocks: [
             GameBlock(position: GridPoint(row: 0, column: 0), tone: .cyan)
         ])
@@ -105,33 +105,52 @@ final class GameEngineTests: XCTestCase {
         let result = GameEngine.clearCompletedLines(in: &state)
 
         XCTAssertTrue(result.lines.isEmpty)
-        XCTAssertEqual(state.signal, 94)
-        XCTAssertEqual(state.lastSignalEvent, SignalEvent(kind: .emptySwipe, delta: -6, value: 94))
+        XCTAssertEqual(state.pulse, 94)
+        XCTAssertEqual(state.lastPulseEvent, PulseEvent(kind: .deadSwipe, delta: -6, value: 94))
         XCTAssertFalse(state.isGameOver)
     }
 
-    func testEmptySwipeAtZeroSignalEndsRun() {
+    func testDeadSwipeAtZeroPulseEndsRun() {
         var state = fixture(blocks: [
             GameBlock(position: GridPoint(row: 0, column: 0), tone: .cyan)
         ])
-        state.signal = 5
+        state.pulse = 1
 
         _ = GameEngine.clearCompletedLines(in: &state)
 
-        XCTAssertEqual(state.signal, 0)
+        XCTAssertEqual(state.pulse, 0)
         XCTAssertTrue(state.isGameOver)
     }
 
-    func testClearRestoresSignal() {
+    func testClearRestoresPulse() {
         var state = fixture(blocks: (0..<8).map {
             GameBlock(position: GridPoint(row: 3, column: $0), tone: .cyan)
         })
-        state.signal = 50
+        state.pulse = 50
 
         _ = GameEngine.clearCompletedLines(in: &state)
 
-        XCTAssertEqual(state.signal, 56)
-        XCTAssertEqual(state.lastSignalEvent, SignalEvent(kind: .clear, delta: 6, value: 56))
+        XCTAssertEqual(state.pulse, 57)
+        XCTAssertEqual(state.lastPulseEvent, PulseEvent(kind: .clear, delta: 7, value: 57))
+    }
+
+    func testChainIncrementsOnConsecutiveClearsAndResetsImmediatelyOnDeadSwipe() {
+        var state = fixture(blocks: (0..<8).map {
+            GameBlock(position: GridPoint(row: 0, column: $0), tone: .cyan)
+        })
+
+        _ = GameEngine.clearCompletedLines(in: &state)
+        XCTAssertEqual(state.chain, 1)
+
+        GameEngine.removeClearedBlocks(in: &state)
+        state.blocks = (0..<8).map { GameBlock(position: GridPoint(row: 1, column: $0), tone: .pink) }
+        _ = GameEngine.clearCompletedLines(in: &state)
+        XCTAssertEqual(state.chain, 2)
+
+        GameEngine.removeClearedBlocks(in: &state)
+        state.blocks = [GameBlock(position: GridPoint(row: 2, column: 0), tone: .lime)]
+        _ = GameEngine.clearCompletedLines(in: &state)
+        XCTAssertEqual(state.chain, 0, "chain must reset on the very first move that does not clear")
     }
 
     func testSpawnUsesOnlyEmptyCells() {
@@ -229,12 +248,12 @@ final class GameEngineTests: XCTestCase {
         XCTAssertEqual(state.moves, 1)
     }
 
-    func testLevelProgressesFromScoreOrMovesWithoutCap() {
-        XCTAssertEqual(GameEngine.level(forScore: 0, moves: 0), 1)
-        XCTAssertEqual(GameEngine.level(forScore: 1_000, moves: 0), 3)
-        XCTAssertEqual(GameEngine.level(forScore: 0, moves: 54), 4)
-        XCTAssertEqual(GameEngine.level(forScore: 12_000, moves: 400), 25)
-        XCTAssertEqual(GameEngine.formattedMultiplier(GameEngine.difficultyCoefficient(forScore: 1_200, moves: 30, victories: 12)), "1.87x")
+    func testTierProgressesFromScoreOrMovesWithoutCap() {
+        XCTAssertEqual(GameEngine.tier(forScore: 0, moves: 0), 1)
+        XCTAssertEqual(GameEngine.tier(forScore: 1_000, moves: 0), 3)
+        XCTAssertEqual(GameEngine.tier(forScore: 0, moves: 54), 4)
+        XCTAssertEqual(GameEngine.tier(forScore: 12_000, moves: 400), 25)
+        XCTAssertEqual(GameEngine.formattedYield(GameEngine.difficultyCoefficient(forScore: 1_200, moves: 30, tally: 12)), "1.87x")
     }
 
     func testIncomingBlockCountDropsAsXpRises() {
@@ -266,19 +285,19 @@ final class GameEngineTests: XCTestCase {
         XCTAssertEqual(GameEngine.incomingBlockPreview(forXP: 2.2, emptyCellCount: 34), "4")
     }
 
-    func testFlowBurstClearsDensestLine() {
+    func testOverdriveClearsDensestLine() {
         var state = fixture(blocks: [
             GameBlock(position: GridPoint(row: 1, column: 0), tone: .cyan),
             GameBlock(position: GridPoint(row: 1, column: 1), tone: .pink),
             GameBlock(position: GridPoint(row: 1, column: 2), tone: .lime),
             GameBlock(position: GridPoint(row: 3, column: 0), tone: .violet)
         ])
-        state.flowEnergy = 120
+        state.surge = 120
 
-        let burst = GameEngine.triggerCoreBurstIfReady(in: &state)
+        let burst = GameEngine.triggerOverdriveIfReady(in: &state)
 
-        XCTAssertEqual(burst, CoreBurstSummary(clearedCount: 3, line: .row(1), scoreDelta: 225))
-        XCTAssertEqual(state.flowEnergy, 30)
+        XCTAssertEqual(burst, OverdriveSummary(clearedCount: 3, line: .row(1), scoreDelta: 225))
+        XCTAssertEqual(state.surge, 30)
         XCTAssertEqual(state.blocks.count, 1)
         XCTAssertEqual(state.blocks.first?.position, GridPoint(row: 3, column: 0))
         XCTAssertEqual(state.score, 225)

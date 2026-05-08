@@ -53,23 +53,27 @@ struct ClearSummary: Codable, Hashable, Equatable {
     var lineCount: Int
     var scoreDelta: Int
     var bonus: Int
-    var streak: Int
-    var flowGained: Int
-    var pointMultiplier: Double
+    var chain: Int
+    var surgeGained: Int
+    var yield: Double
 
-    init(lineCount: Int, scoreDelta: Int, bonus: Int, streak: Int, flowGained: Int, pointMultiplier: Double = 1) {
+    init(lineCount: Int, scoreDelta: Int, bonus: Int, chain: Int, surgeGained: Int, yield: Double = 1) {
         self.lineCount = lineCount
         self.scoreDelta = scoreDelta
         self.bonus = bonus
-        self.streak = streak
-        self.flowGained = flowGained
-        self.pointMultiplier = pointMultiplier
+        self.chain = chain
+        self.surgeGained = surgeGained
+        self.yield = yield
     }
 
     enum CodingKeys: String, CodingKey {
         case lineCount
         case scoreDelta
         case bonus
+        case chain
+        case surgeGained
+        case yield
+        // legacy
         case streak
         case flowGained
         case pointMultiplier
@@ -80,22 +84,45 @@ struct ClearSummary: Codable, Hashable, Equatable {
         lineCount = try container.decodeIfPresent(Int.self, forKey: .lineCount) ?? 0
         scoreDelta = try container.decodeIfPresent(Int.self, forKey: .scoreDelta) ?? 0
         bonus = try container.decodeIfPresent(Int.self, forKey: .bonus) ?? 0
-        streak = try container.decodeIfPresent(Int.self, forKey: .streak) ?? 0
-        flowGained = try container.decodeIfPresent(Int.self, forKey: .flowGained) ?? 0
-        pointMultiplier = try container.decodeIfPresent(Double.self, forKey: .pointMultiplier) ?? 1
+        chain = try container.decodeIfPresent(Int.self, forKey: .chain)
+            ?? container.decodeIfPresent(Int.self, forKey: .streak) ?? 0
+        surgeGained = try container.decodeIfPresent(Int.self, forKey: .surgeGained)
+            ?? container.decodeIfPresent(Int.self, forKey: .flowGained) ?? 0
+        yield = try container.decodeIfPresent(Double.self, forKey: .yield)
+            ?? container.decodeIfPresent(Double.self, forKey: .pointMultiplier) ?? 1
+    }
+
+    func encode(to encoder: Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        try container.encode(lineCount, forKey: .lineCount)
+        try container.encode(scoreDelta, forKey: .scoreDelta)
+        try container.encode(bonus, forKey: .bonus)
+        try container.encode(chain, forKey: .chain)
+        try container.encode(surgeGained, forKey: .surgeGained)
+        try container.encode(yield, forKey: .yield)
     }
 }
 
-struct CoreBurstSummary: Codable, Hashable, Equatable {
+struct OverdriveSummary: Codable, Hashable, Equatable {
     var clearedCount: Int
     var line: ClearedLine
     var scoreDelta: Int
 }
 
-struct SignalEvent: Codable, Hashable, Equatable {
+struct PulseEvent: Codable, Hashable, Equatable {
     enum Kind: String, Codable {
-        case emptySwipe
+        case deadSwipe
         case clear
+
+        init(from decoder: Decoder) throws {
+            let container = try decoder.singleValueContainer()
+            let raw = try container.decode(String.self)
+            switch raw {
+            case "deadSwipe", "emptySwipe": self = .deadSwipe
+            case "clear": self = .clear
+            default: self = .deadSwipe
+            }
+        }
     }
 
     var kind: Kind
@@ -128,15 +155,14 @@ struct GameState: Codable, Equatable {
     var score: Int
     var bestScore: Int
     var moves: Int
-    var victories: Int
-    var level: Int
+    var tally: Int
+    var tier: Int
     var lastClear: ClearSummary?
-    var lastCoreBurst: CoreBurstSummary?
-    var lastSignalEvent: SignalEvent?
-    var signal: Int
-    var flowEnergy: Int
-    var streak: Int
-    var streakMovesRemaining: Int
+    var lastOverdrive: OverdriveSummary?
+    var lastPulseEvent: PulseEvent?
+    var pulse: Int
+    var surge: Int
+    var chain: Int
     var leaderboard: [LeaderboardEntry]
     var rng: SeededGenerator
     var isGameOver: Bool
@@ -151,15 +177,14 @@ struct GameState: Codable, Equatable {
         score: Int = 0,
         bestScore: Int = 0,
         moves: Int = 0,
-        victories: Int = 0,
-        level: Int = 1,
+        tally: Int = 0,
+        tier: Int = 1,
         lastClear: ClearSummary? = nil,
-        lastCoreBurst: CoreBurstSummary? = nil,
-        lastSignalEvent: SignalEvent? = nil,
-        signal: Int = 100,
-        flowEnergy: Int = 0,
-        streak: Int = 0,
-        streakMovesRemaining: Int = 0,
+        lastOverdrive: OverdriveSummary? = nil,
+        lastPulseEvent: PulseEvent? = nil,
+        pulse: Int = 100,
+        surge: Int = 0,
+        chain: Int = 0,
         leaderboard: [LeaderboardEntry] = [],
         rng: SeededGenerator = SeededGenerator(),
         isGameOver: Bool = false,
@@ -173,15 +198,14 @@ struct GameState: Codable, Equatable {
         self.score = score
         self.bestScore = bestScore
         self.moves = moves
-        self.victories = victories
-        self.level = level
+        self.tally = tally
+        self.tier = tier
         self.lastClear = lastClear
-        self.lastCoreBurst = lastCoreBurst
-        self.lastSignalEvent = lastSignalEvent
-        self.signal = signal
-        self.flowEnergy = flowEnergy
-        self.streak = streak
-        self.streakMovesRemaining = streakMovesRemaining
+        self.lastOverdrive = lastOverdrive
+        self.lastPulseEvent = lastPulseEvent
+        self.pulse = pulse
+        self.surge = surge
+        self.chain = chain
         self.leaderboard = leaderboard
         self.rng = rng
         self.isGameOver = isGameOver
@@ -197,15 +221,14 @@ struct GameState: Codable, Equatable {
         case score
         case bestScore
         case moves
-        case victories
-        case level
+        case tally
+        case tier
         case lastClear
-        case lastCoreBurst
-        case lastSignalEvent
-        case signal
-        case flowEnergy
-        case streak
-        case streakMovesRemaining
+        case lastOverdrive
+        case lastPulseEvent
+        case pulse
+        case surge
+        case chain
         case leaderboard
         case rng
         case isGameOver
@@ -213,6 +236,14 @@ struct GameState: Codable, Equatable {
         case highlightedLines
         case clearingBlockIDs
         case spawningBlockIDs
+        // legacy
+        case victories
+        case level
+        case lastCoreBurst
+        case lastSignalEvent
+        case signal
+        case flowEnergy
+        case streak
     }
 
     init(from decoder: Decoder) throws {
@@ -222,15 +253,21 @@ struct GameState: Codable, Equatable {
         score = try container.decodeIfPresent(Int.self, forKey: .score) ?? 0
         bestScore = try container.decodeIfPresent(Int.self, forKey: .bestScore) ?? 0
         moves = try container.decodeIfPresent(Int.self, forKey: .moves) ?? 0
-        victories = try container.decodeIfPresent(Int.self, forKey: .victories) ?? 0
-        level = try container.decodeIfPresent(Int.self, forKey: .level) ?? 1
+        tally = try container.decodeIfPresent(Int.self, forKey: .tally)
+            ?? container.decodeIfPresent(Int.self, forKey: .victories) ?? 0
+        tier = try container.decodeIfPresent(Int.self, forKey: .tier)
+            ?? container.decodeIfPresent(Int.self, forKey: .level) ?? 1
         lastClear = try container.decodeIfPresent(ClearSummary.self, forKey: .lastClear)
-        lastCoreBurst = try container.decodeIfPresent(CoreBurstSummary.self, forKey: .lastCoreBurst)
-        lastSignalEvent = try container.decodeIfPresent(SignalEvent.self, forKey: .lastSignalEvent)
-        signal = try container.decodeIfPresent(Int.self, forKey: .signal) ?? 100
-        flowEnergy = try container.decodeIfPresent(Int.self, forKey: .flowEnergy) ?? 0
-        streak = try container.decodeIfPresent(Int.self, forKey: .streak) ?? 0
-        streakMovesRemaining = try container.decodeIfPresent(Int.self, forKey: .streakMovesRemaining) ?? 0
+        lastOverdrive = try container.decodeIfPresent(OverdriveSummary.self, forKey: .lastOverdrive)
+            ?? container.decodeIfPresent(OverdriveSummary.self, forKey: .lastCoreBurst)
+        lastPulseEvent = try container.decodeIfPresent(PulseEvent.self, forKey: .lastPulseEvent)
+            ?? container.decodeIfPresent(PulseEvent.self, forKey: .lastSignalEvent)
+        pulse = try container.decodeIfPresent(Int.self, forKey: .pulse)
+            ?? container.decodeIfPresent(Int.self, forKey: .signal) ?? 100
+        surge = try container.decodeIfPresent(Int.self, forKey: .surge)
+            ?? container.decodeIfPresent(Int.self, forKey: .flowEnergy) ?? 0
+        chain = try container.decodeIfPresent(Int.self, forKey: .chain)
+            ?? container.decodeIfPresent(Int.self, forKey: .streak) ?? 0
         leaderboard = try container.decodeIfPresent([LeaderboardEntry].self, forKey: .leaderboard) ?? []
         rng = try container.decodeIfPresent(SeededGenerator.self, forKey: .rng) ?? SeededGenerator()
         isGameOver = try container.decodeIfPresent(Bool.self, forKey: .isGameOver) ?? false
@@ -238,5 +275,29 @@ struct GameState: Codable, Equatable {
         highlightedLines = try container.decodeIfPresent([ClearedLine].self, forKey: .highlightedLines) ?? []
         clearingBlockIDs = try container.decodeIfPresent(Set<UUID>.self, forKey: .clearingBlockIDs) ?? []
         spawningBlockIDs = try container.decodeIfPresent(Set<UUID>.self, forKey: .spawningBlockIDs) ?? []
+    }
+
+    func encode(to encoder: Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        try container.encode(boardSize, forKey: .boardSize)
+        try container.encode(blocks, forKey: .blocks)
+        try container.encode(score, forKey: .score)
+        try container.encode(bestScore, forKey: .bestScore)
+        try container.encode(moves, forKey: .moves)
+        try container.encode(tally, forKey: .tally)
+        try container.encode(tier, forKey: .tier)
+        try container.encodeIfPresent(lastClear, forKey: .lastClear)
+        try container.encodeIfPresent(lastOverdrive, forKey: .lastOverdrive)
+        try container.encodeIfPresent(lastPulseEvent, forKey: .lastPulseEvent)
+        try container.encode(pulse, forKey: .pulse)
+        try container.encode(surge, forKey: .surge)
+        try container.encode(chain, forKey: .chain)
+        try container.encode(leaderboard, forKey: .leaderboard)
+        try container.encode(rng, forKey: .rng)
+        try container.encode(isGameOver, forKey: .isGameOver)
+        try container.encodeIfPresent(activeMove, forKey: .activeMove)
+        try container.encode(highlightedLines, forKey: .highlightedLines)
+        try container.encode(clearingBlockIDs, forKey: .clearingBlockIDs)
+        try container.encode(spawningBlockIDs, forKey: .spawningBlockIDs)
     }
 }

@@ -31,15 +31,15 @@ struct ContentView: View {
                             .layoutPriority(2)
 
                         VStack(spacing: 8) {
-                            MarginGauge(signal: viewModel.state.signal)
-                            MomentumGauge(energy: viewModel.state.flowEnergy, streak: viewModel.state.streak, streakMovesRemaining: viewModel.state.streakMovesRemaining)
+                            PulseGauge(pulse: viewModel.state.pulse)
+                            SurgeGauge(surge: viewModel.state.surge, chain: viewModel.state.chain)
                         }
                         .padding(.top, 4)
 
                         EventStrip(
                             lastClear: viewModel.state.lastClear,
-                            lastCoreBurst: viewModel.state.lastCoreBurst,
-                            lastSignalEvent: viewModel.state.lastSignalEvent
+                            lastOverdrive: viewModel.state.lastOverdrive,
+                            lastPulseEvent: viewModel.state.lastPulseEvent
                         )
 
                         Spacer(minLength: 0)
@@ -58,9 +58,17 @@ struct ContentView: View {
                 }
                 .padding(.bottom, showAd ? proxy.safeAreaInsets.bottom : 0)
 
+                if viewModel.isSnoozed {
+                    SnoozeCurtain(wake: viewModel.wakeFromSnooze)
+                        .transition(.opacity)
+                }
+
                 if viewModel.isAgentPaused {
-                    PauseOverlay(dismiss: viewModel.dismissAgentPause)
-                        .transition(.opacity.combined(with: .scale))
+                    AgentPauseOverlay(
+                        backToWork: viewModel.snoozeFromAgentPause,
+                        procrastinate: viewModel.dismissAgentPause
+                    )
+                    .transition(.opacity.combined(with: .scale))
                 }
 
                 if viewModel.state.isGameOver {
@@ -86,6 +94,7 @@ struct ContentView: View {
             .contentShape(Rectangle())
             .gesture(swipeGesture)
             .animation(.spring(response: 0.32, dampingFraction: 0.78), value: viewModel.isAgentPaused)
+            .animation(.easeInOut(duration: 0.22), value: viewModel.isSnoozed)
             .animation(.easeInOut(duration: 0.25), value: isSettingsPresented)
             .fullScreenCover(isPresented: $isPaywallPresented) {
                 PaywallView(subscriptionStore: subscriptionStore, dismiss: { isPaywallPresented = false })
@@ -192,32 +201,32 @@ struct StatusBar: View {
     }
 }
 
-// MARK: - MarginGauge
+// MARK: - PulseGauge
 
-private struct MarginGauge: View {
-    let signal: Int
+private struct PulseGauge: View {
+    let pulse: Int
 
     private var progress: Double {
-        Double(min(100, max(0, signal))) / 100
+        Double(min(100, max(0, pulse))) / 100
     }
 
     private var tint: Color {
-        signal <= 25 ? .shiftPink : .shiftLime
+        pulse <= 25 ? .shiftPink : .shiftLime
     }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 6) {
             HStack {
-                Text("MARGIN")
+                Text("PULSE")
                     .font(.system(size: 12, weight: .black, design: .rounded))
                     .foregroundStyle(tint)
-                Text("EMPTY SWIPES DRAIN IT")
+                Text("DEAD SWIPES DRAIN IT")
                     .font(.system(size: 9, weight: .bold, design: .rounded))
                     .foregroundStyle(.white.opacity(0.35))
                     .lineLimit(1)
                     .minimumScaleFactor(0.7)
                 Spacer(minLength: 8)
-                Text("\(signal)%")
+                Text("\(pulse)%")
                     .font(.system(size: 13, weight: .black, design: .rounded))
                     .foregroundStyle(.white.opacity(0.9))
                     .monospacedDigit()
@@ -250,30 +259,32 @@ private struct MarginGauge: View {
     }
 }
 
-// MARK: - MomentumGauge
+// MARK: - SurgeGauge
 
-private struct MomentumGauge: View {
-    let energy: Int
-    let streak: Int
-    let streakMovesRemaining: Int
+private struct SurgeGauge: View {
+    let surge: Int
+    let chain: Int
 
     private var progress: Double {
-        Double(min(100, max(0, energy))) / 100
+        Double(min(100, max(0, surge))) / 100
     }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 6) {
             HStack {
-                Text("CORE BURST")
+                Text("SURGE")
                     .font(.system(size: 10, weight: .bold, design: .rounded))
                     .foregroundStyle(.white.opacity(0.48))
-                if streak > 1 {
-                    Text("STREAK \(streak)")
+                Text("→ OVERDRIVE")
+                    .font(.system(size: 9, weight: .bold, design: .rounded))
+                    .foregroundStyle(.white.opacity(0.32))
+                if chain > 1 {
+                    Text("CHAIN ×\(chain)")
                         .font(.system(size: 10, weight: .black, design: .rounded))
                         .foregroundStyle(Color.shiftYellow)
                 }
                 Spacer(minLength: 6)
-                Text(streak > 1 ? "\(streakMovesRemaining) LEFT" : "\(energy)% CHARGED")
+                Text("\(surge)%")
                     .font(.system(size: 12, weight: .black, design: .rounded))
                     .foregroundStyle(.white.opacity(0.85))
                     .monospacedDigit()
@@ -338,15 +349,15 @@ private struct BlastBanner: View {
                 .monospacedDigit()
                 .lineLimit(1)
                 .minimumScaleFactor(0.72)
-            if summary.streak > 1 {
-                Text("×\(summary.streak)")
+            if summary.chain > 1 {
+                Text("CHAIN ×\(summary.chain)")
                     .font(.system(size: 10, weight: .black, design: .rounded))
                     .foregroundStyle(Color.shiftPink)
                     .monospacedDigit()
                     .lineLimit(1)
                     .minimumScaleFactor(0.72)
             }
-            Text(GameEngine.formattedMultiplier(summary.pointMultiplier))
+            Text(GameEngine.formattedYield(summary.yield))
                 .font(.system(size: 10, weight: .black, design: .rounded))
                 .foregroundStyle(Color.shiftCyan)
                 .monospacedDigit()
@@ -374,19 +385,19 @@ private struct BlastBanner: View {
 
 private struct EventStrip: View {
     let lastClear: ClearSummary?
-    let lastCoreBurst: CoreBurstSummary?
-    let lastSignalEvent: SignalEvent?
+    let lastOverdrive: OverdriveSummary?
+    let lastPulseEvent: PulseEvent?
 
     var body: some View {
         ZStack {
-            if let lastCoreBurst {
-                CoreBurstAlert(summary: lastCoreBurst)
+            if let lastOverdrive {
+                OverdriveAlert(summary: lastOverdrive)
                     .transition(.scale.combined(with: .opacity))
             } else if let lastClear, lastClear.lineCount > 1 {
                 BlastBanner(summary: lastClear)
                     .transition(.scale.combined(with: .opacity))
-            } else if let lastSignalEvent {
-                MarginAlert(event: lastSignalEvent)
+            } else if let lastPulseEvent {
+                PulseAlert(event: lastPulseEvent)
                     .transition(.scale.combined(with: .opacity))
             } else {
                 EventHint()
@@ -394,22 +405,22 @@ private struct EventStrip: View {
         }
         .frame(height: 46)
         .animation(.spring(response: 0.28, dampingFraction: 0.78), value: lastClear)
-        .animation(.spring(response: 0.28, dampingFraction: 0.78), value: lastCoreBurst)
-        .animation(.spring(response: 0.28, dampingFraction: 0.78), value: lastSignalEvent)
+        .animation(.spring(response: 0.28, dampingFraction: 0.78), value: lastOverdrive)
+        .animation(.spring(response: 0.28, dampingFraction: 0.78), value: lastPulseEvent)
     }
 }
 
-// MARK: - MarginAlert
+// MARK: - PulseAlert
 
-private struct MarginAlert: View {
-    let event: SignalEvent
+private struct PulseAlert: View {
+    let event: PulseEvent
 
     private var tint: Color {
-        event.kind == .emptySwipe ? .shiftPink : .shiftLime
+        event.kind == .deadSwipe ? .shiftPink : .shiftLime
     }
 
     private var title: String {
-        event.kind == .emptySwipe ? "EMPTY SWIPE" : "SIGNAL RESTORED"
+        event.kind == .deadSwipe ? "DEAD SWIPE" : "PULSE RESTORED"
     }
 
     var body: some View {
@@ -451,7 +462,7 @@ private struct MarginAlert: View {
 private struct EventHint: View {
     var body: some View {
         HStack {
-            Text("CHARGE CORE BURST")
+            Text("CHARGE OVERDRIVE")
                 .font(.system(size: 11, weight: .black, design: .rounded))
                 .foregroundStyle(.white.opacity(0.24))
             Spacer()
@@ -469,10 +480,10 @@ private struct EventHint: View {
     }
 }
 
-// MARK: - CoreBurstAlert
+// MARK: - OverdriveAlert
 
-private struct CoreBurstAlert: View {
-    let summary: CoreBurstSummary
+private struct OverdriveAlert: View {
+    let summary: OverdriveSummary
 
     private var lineName: String {
         switch summary.line {
@@ -483,7 +494,7 @@ private struct CoreBurstAlert: View {
 
     var body: some View {
         HStack(spacing: 10) {
-            Text("CORE BURST")
+            Text("OVERDRIVE")
                 .font(.system(size: 13, weight: .black, design: .rounded))
                 .foregroundStyle(Color.shiftYellow)
                 .lineLimit(1)
@@ -693,66 +704,127 @@ private struct GameOverView: View {
     }
 }
 
-// MARK: - PauseOverlay
+// MARK: - AgentPauseOverlay
 
-private struct PauseOverlay: View {
-    let dismiss: () -> Void
+private struct AgentPauseOverlay: View {
+    let backToWork: () -> Void
+    let procrastinate: () -> Void
 
     var body: some View {
         ZStack {
-            Color.black.opacity(0.74)
+            Color.black.opacity(0.78)
                 .ignoresSafeArea()
 
-            VStack(spacing: 14) {
+            VStack(spacing: 16) {
                 HStack(spacing: 8) {
                     Circle()
                         .fill(Color.shiftLime)
                         .frame(width: 8, height: 8)
                         .shadow(color: Color.shiftLime.opacity(0.6), radius: 8)
                     Text("AGENT READY")
-                        .font(.system(size: 14, weight: .black, design: .rounded))
+                        .font(.system(size: 13, weight: .black, design: .rounded))
                         .foregroundStyle(Color.shiftLime)
                         .tracking(0.5)
                 }
 
-                Text("Return to terminal")
-                    .font(.system(size: 28, weight: .black, design: .rounded))
-                    .foregroundStyle(.white)
-                    .multilineTextAlignment(.center)
+                VStack(spacing: 6) {
+                    Text("Distratto?")
+                        .font(.system(size: 30, weight: .black, design: .rounded))
+                        .foregroundStyle(.white)
+                    Text("L'agente AI ha finito.\nIl tuo lavoro ti aspetta.")
+                        .font(.system(size: 13, weight: .bold, design: .rounded))
+                        .foregroundStyle(.white.opacity(0.6))
+                        .multilineTextAlignment(.center)
+                        .lineSpacing(2)
+                }
 
-                Text("Game is paused.\nResume when ready.")
-                    .font(.system(size: 12, weight: .bold, design: .rounded))
-                    .foregroundStyle(.white.opacity(0.55))
-                    .multilineTextAlignment(.center)
-
-                Button(action: dismiss) {
-                    Text("RESUME")
-                        .font(.system(size: 14, weight: .black, design: .rounded))
-                        .foregroundStyle(.black)
+                VStack(spacing: 10) {
+                    Button(action: backToWork) {
+                        VStack(spacing: 2) {
+                            Text("TORNO AL LAVORO")
+                                .font(.system(size: 15, weight: .black, design: .rounded))
+                                .foregroundStyle(.black)
+                            Text("La sana scelta")
+                                .font(.system(size: 10, weight: .bold, design: .rounded))
+                                .foregroundStyle(.black.opacity(0.55))
+                        }
                         .frame(maxWidth: .infinity)
-                        .padding(.vertical, 14)
+                        .padding(.vertical, 12)
                         .background(
                             LinearGradient(
                                 colors: [Color.shiftLime, Color.shiftCyan],
                                 startPoint: .leading, endPoint: .trailing),
-                            in: RoundedRectangle(cornerRadius: 8, style: .continuous)
+                            in: RoundedRectangle(cornerRadius: 10, style: .continuous)
                         )
+                    }
+
+                    Button(action: procrastinate) {
+                        VStack(spacing: 2) {
+                            Text("PROCRASTINO")
+                                .font(.system(size: 14, weight: .black, design: .rounded))
+                                .foregroundStyle(Color.shiftPink)
+                            Text("Ancora una mossa")
+                                .font(.system(size: 10, weight: .bold, design: .rounded))
+                                .foregroundStyle(.white.opacity(0.4))
+                        }
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 11)
+                        .background(
+                            Color.white.opacity(0.05),
+                            in: RoundedRectangle(cornerRadius: 10, style: .continuous)
+                        )
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 10, style: .continuous)
+                                .stroke(Color.shiftPink.opacity(0.35), lineWidth: 1)
+                        )
+                    }
                 }
-                .padding(.top, 6)
+                .padding(.top, 4)
             }
             .padding(20)
             .frame(maxWidth: 340)
             .background(
                 Color(red: 0.035, green: 0.038, blue: 0.05),
-                in: RoundedRectangle(cornerRadius: 8, style: .continuous)
+                in: RoundedRectangle(cornerRadius: 12, style: .continuous)
             )
             .overlay(
-                RoundedRectangle(cornerRadius: 8, style: .continuous)
+                RoundedRectangle(cornerRadius: 12, style: .continuous)
                     .stroke(Color.shiftLime.opacity(0.3), lineWidth: 1)
             )
             .shadow(color: Color.shiftLime.opacity(0.18), radius: 24, y: 6)
             .padding(.horizontal, 20)
         }
+    }
+}
+
+// MARK: - SnoozeCurtain
+
+private struct SnoozeCurtain: View {
+    let wake: () -> Void
+
+    var body: some View {
+        ZStack {
+            Color.black.opacity(0.86)
+                .ignoresSafeArea()
+
+            VStack(spacing: 14) {
+                Image(systemName: "moon.zzz.fill")
+                    .font(.system(size: 32, weight: .light))
+                    .foregroundStyle(Color.nightPurpleMid)
+
+                Text("Buon lavoro.")
+                    .font(.system(size: 22, weight: .black, design: .rounded))
+                    .foregroundStyle(.white.opacity(0.85))
+
+                Text("Tap per riprendere quando vuoi.")
+                    .font(.system(size: 12, weight: .bold, design: .rounded))
+                    .foregroundStyle(.white.opacity(0.4))
+            }
+            .multilineTextAlignment(.center)
+            .padding(28)
+        }
+        .contentShape(Rectangle())
+        .onTapGesture { wake() }
     }
 }
 

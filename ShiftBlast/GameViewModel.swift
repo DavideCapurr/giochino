@@ -21,6 +21,9 @@ final class GameViewModel: ObservableObject {
     var isAgentPaused: Bool = false
 
     @Published
+    var isSnoozed: Bool = false
+
+    @Published
     var isMuted: Bool = false
 
     @Published var isAgentEnabled: Bool = false {
@@ -45,7 +48,7 @@ final class GameViewModel: ObservableObject {
     }
 
     func swipe(_ direction: SwipeDirection) {
-        guard !isAgentPaused, !state.isGameOver else { return }
+        guard !isAgentPaused, !isSnoozed, !state.isGameOver else { return }
         feedback.impact()
         guard !isResolvingMove else { return }
         guard GameEngine.startMove(direction, in: &state) else { return }
@@ -91,6 +94,19 @@ final class GameViewModel: ObservableObject {
     func dismissAgentPause() {
         guard isAgentPaused else { return }
         isAgentPaused = false
+        isSnoozed = false
+        resumeInterruptedMoveIfNeeded()
+    }
+
+    func snoozeFromAgentPause() {
+        isAgentPaused = false
+        isSnoozed = true
+        store.save(state)
+    }
+
+    func wakeFromSnooze() {
+        guard isSnoozed else { return }
+        isSnoozed = false
         resumeInterruptedMoveIfNeeded()
     }
 

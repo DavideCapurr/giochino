@@ -13,8 +13,8 @@ enum GameEngine {
     static let initialEmptyCellRange = 20..<30
     static let slideDuration: TimeInterval = 0.24
     static let scorePerLine = 300
-    static let flowThreshold = 90
-    static let maxSignal = 100
+    static let overdriveThreshold = 90
+    static let maxPulse = 100
 
     static func newGame(seed: UInt64 = UInt64(Date().timeIntervalSince1970 * 1_000_000), bestScore: Int = 0, leaderboard: [LeaderboardEntry] = []) -> GameState {
         var state = GameState(boardSize: defaultBoardSize, bestScore: bestScore, leaderboard: leaderboard, rng: SeededGenerator(seed: seed))
@@ -45,10 +45,10 @@ enum GameEngine {
         state.clearingBlockIDs = []
         state.spawningBlockIDs = []
         state.lastClear = nil
-        state.lastCoreBurst = nil
-        state.lastSignalEvent = nil
+        state.lastOverdrive = nil
+        state.lastPulseEvent = nil
         state.moves += 1
-        state.level = level(forScore: state.score, moves: state.moves)
+        state.tier = tier(forScore: state.score, moves: state.moves)
         state.activeMove = ActiveMove(direction: direction, steps: movingSteps, startedAt: now, duration: slideDuration, savedProgress: nil)
         return true
     }
@@ -85,7 +85,7 @@ enum GameEngine {
     @discardableResult
     static func spawnAfterMove(in state: inout GameState) -> MoveOutcome {
         removeClearedBlocks(in: &state)
-        triggerCoreBurstIfReady(in: &state)
+        triggerOverdriveIfReady(in: &state)
         guard !state.isGameOver else {
             return MoveOutcome(
                 clearedLines: [],
@@ -107,7 +107,7 @@ enum GameEngine {
             )
         }
         let spawnCount = incomingBlockCount(
-            forXP: pointMultiplier(forVictories: state.victories),
+            forXP: yield(forTally: state.tally),
             emptyCellCount: emptyCount,
             rng: &state.rng
         )
@@ -232,14 +232,14 @@ enum GameEngine {
         return index
     }
 
-    static func level(forScore score: Int, moves: Int) -> Int {
-        let scoreLevel = score / 500
-        let moveLevel = moves / 18
-        return max(1, 1 + max(scoreLevel, moveLevel))
+    static func tier(forScore score: Int, moves: Int) -> Int {
+        let scoreTier = score / 500
+        let moveTier = moves / 18
+        return max(1, 1 + max(scoreTier, moveTier))
     }
 
-    static func incomingBlockPreview(forLevel level: Int) -> String {
-        switch level {
+    static func incomingBlockPreview(forTier tier: Int) -> String {
+        switch tier {
         case 1:
             return "2"
         case 2:
@@ -249,7 +249,7 @@ enum GameEngine {
         case 4:
             return "4"
         default:
-            return level.isMultiple(of: 3) ? "4-5" : "4"
+            return tier.isMultiple(of: 3) ? "4-5" : "4"
         }
     }
 
@@ -295,25 +295,25 @@ enum GameEngine {
         return "\(lower)-\(upper)"
     }
 
-    static func pointMultiplier(forVictories victories: Int) -> Double {
-        1 + sqrt(Double(max(0, victories))) * 0.1
+    static func yield(forTally tally: Int) -> Double {
+        1 + sqrt(Double(max(0, tally))) * 0.1
     }
 
-    static func formattedMultiplier(_ multiplier: Double) -> String {
-        String(format: "%.2fx", multiplier)
+    static func formattedYield(_ yield: Double) -> String {
+        String(format: "%.2fx", yield)
     }
 
-    static func difficultyCoefficient(forScore score: Int, moves: Int, victories: Int) -> Double {
-        1 + Double(max(0, moves)) * 0.006 + Double(max(0, victories)) * 0.045 + Double(max(0, score)) / 8_000
+    static func difficultyCoefficient(forScore score: Int, moves: Int, tally: Int) -> Double {
+        1 + Double(max(0, moves)) * 0.006 + Double(max(0, tally)) * 0.045 + Double(max(0, score)) / 8_000
     }
 
-    static func emptySwipePenalty(forDifficulty difficulty: Double, rng: inout SeededGenerator) -> Int {
+    static func pulseDrain(forDifficulty difficulty: Double, rng: inout SeededGenerator) -> Int {
         let base = min(18, 6 + Int((max(1, difficulty) - 1) * 1.5))
         let jitter = rng.nextInt(in: -2..<3)
         return max(3, base + jitter)
     }
 
-    static func signalGain(forLineCount lineCount: Int, streak: Int = 0, difficulty: Double = 1) -> Int {
+    static func pulseGain(forLineCount lineCount: Int, chain: Int = 0, difficulty: Double = 1) -> Int {
         let base: Int
         switch lineCount {
         case 0: return 0
@@ -321,18 +321,18 @@ enum GameEngine {
         case 2: base = 12
         default: base = 20
         }
-        let raw = base + min(8, max(0, streak) * 1)
+        let raw = base + min(8, max(0, chain) * 1)
         let decay = max(0.4, 1.0 - (difficulty - 1) * 0.06)
         return max(2, Int((Double(raw) * decay).rounded()))
     }
 
-    static func streakBonus(forStreak streak: Int, difficulty: Double) -> Int {
-        let perStreak = max(30, 90 - Int((difficulty - 1) * 8))
-        return max(0, streak - 1) * perStreak
+    static func chainBonus(forChain chain: Int, difficulty: Double) -> Int {
+        let perChain = max(30, 90 - Int((difficulty - 1) * 8))
+        return max(0, chain - 1) * perChain
     }
 
-    static func incomingBlockCount(forLevel level: Int, rng: inout SeededGenerator) -> Int {
-        switch level {
+    static func incomingBlockCount(forTier tier: Int, rng: inout SeededGenerator) -> Int {
+        switch tier {
         case 1:
             return 2
         case 2:
@@ -342,7 +342,7 @@ enum GameEngine {
         case 4:
             return 4
         default:
-            let extraProbability = min(0.45, 0.1 + Double(level - 5) * 0.03)
+            let extraProbability = min(0.45, 0.1 + Double(tier - 5) * 0.03)
             return rng.nextBool(probability: extraProbability) ? 5 : 4
         }
     }
@@ -418,16 +418,15 @@ enum GameEngine {
             state.highlightedLines = []
             state.clearingBlockIDs = []
             state.lastClear = nil
-            state.streak = 0
-            state.streakMovesRemaining = 0
-            let difficulty = difficultyCoefficient(forScore: state.score, moves: state.moves, victories: state.victories)
-            var penalty = emptySwipePenalty(forDifficulty: difficulty, rng: &state.rng)
-            if state.signal <= 25 {
-                penalty = min(penalty, max(1, state.signal / 2))
+            state.chain = 0
+            let difficulty = difficultyCoefficient(forScore: state.score, moves: state.moves, tally: state.tally)
+            var drain = pulseDrain(forDifficulty: difficulty, rng: &state.rng)
+            if state.pulse <= 25 {
+                drain = min(drain, max(1, state.pulse / 2))
             }
-            state.signal = max(0, state.signal - penalty)
-            state.lastSignalEvent = SignalEvent(kind: .emptySwipe, delta: -penalty, value: state.signal)
-            if state.signal == 0 {
+            state.pulse = max(0, state.pulse - drain)
+            state.lastPulseEvent = PulseEvent(kind: .deadSwipe, delta: -drain, value: state.pulse)
+            if state.pulse == 0 {
                 state.isGameOver = true
             }
             return ([], [], 0)
@@ -443,35 +442,30 @@ enum GameEngine {
         state.highlightedLines = lines
         state.clearingBlockIDs = clearedIDs
 
-        if state.streakMovesRemaining > 0 {
-            state.streak += 1
-        } else {
-            state.streak = 1
-        }
-        state.streakMovesRemaining = 5
+        state.chain += 1
 
-        let difficulty = difficultyCoefficient(forScore: state.score, moves: state.moves, victories: state.victories)
+        let difficulty = difficultyCoefficient(forScore: state.score, moves: state.moves, tally: state.tally)
         let base = lines.count * scorePerLine
         let combo = simultaneousClearBonus(forLineCount: lines.count)
-        let strkBonus = Self.streakBonus(forStreak: state.streak, difficulty: difficulty)
-        let rawDelta = base + combo + strkBonus
-        state.victories += lines.count
-        let multiplier = pointMultiplier(forVictories: state.victories)
-        let delta = Int((Double(rawDelta) * multiplier).rounded())
-        let flowGain = flowGain(forLineCount: lines.count, simultaneousBonus: combo, streak: state.streak)
-        let signalGain = signalGain(forLineCount: lines.count, streak: state.streak, difficulty: difficulty)
+        let chBonus = chainBonus(forChain: state.chain, difficulty: difficulty)
+        let rawDelta = base + combo + chBonus
+        state.tally += lines.count
+        let yieldValue = yield(forTally: state.tally)
+        let delta = Int((Double(rawDelta) * yieldValue).rounded())
+        let surgeGain = surgeGain(forLineCount: lines.count, simultaneousBonus: combo, chain: state.chain)
+        let pGain = pulseGain(forLineCount: lines.count, chain: state.chain, difficulty: difficulty)
         state.score += delta
-        state.flowEnergy += flowGain
-        state.signal = min(maxSignal, state.signal + signalGain)
-        state.lastSignalEvent = SignalEvent(kind: .clear, delta: signalGain, value: state.signal)
-        state.level = level(forScore: state.score, moves: state.moves)
+        state.surge += surgeGain
+        state.pulse = min(maxPulse, state.pulse + pGain)
+        state.lastPulseEvent = PulseEvent(kind: .clear, delta: pGain, value: state.pulse)
+        state.tier = tier(forScore: state.score, moves: state.moves)
         state.lastClear = ClearSummary(
             lineCount: lines.count,
             scoreDelta: delta,
-            bonus: combo + strkBonus,
-            streak: state.streak,
-            flowGained: flowGain,
-            pointMultiplier: multiplier
+            bonus: combo + chBonus,
+            chain: state.chain,
+            surgeGained: surgeGain,
+            yield: yieldValue
         )
         return (lines, clearedIDs, delta)
     }
@@ -481,13 +475,13 @@ enum GameEngine {
         return (lineCount - 1) * 500 + max(0, lineCount - 2) * 250
     }
 
-    static func flowGain(forLineCount lineCount: Int, simultaneousBonus: Int, streak: Int) -> Int {
-        32 * lineCount + simultaneousBonus / 18 + min(30, max(0, streak - 1) * 5)
+    static func surgeGain(forLineCount lineCount: Int, simultaneousBonus: Int, chain: Int) -> Int {
+        32 * lineCount + simultaneousBonus / 18 + min(30, max(0, chain - 1) * 5)
     }
 
     @discardableResult
-    static func triggerCoreBurstIfReady(in state: inout GameState) -> CoreBurstSummary? {
-        guard state.flowEnergy >= flowThreshold else { return nil }
+    static func triggerOverdriveIfReady(in state: inout GameState) -> OverdriveSummary? {
+        guard state.surge >= overdriveThreshold else { return nil }
         guard let target = densestLine(in: state) else { return nil }
 
         let blockCount: Int
@@ -499,16 +493,16 @@ enum GameEngine {
         }
         guard blockCount > 0 else { return nil }
 
-        state.flowEnergy -= flowThreshold
-        let streakMultiplier = 1.0 + Double(max(0, state.streak - 1)) * 0.5
-        let victoryMultiplier = pointMultiplier(forVictories: state.victories)
-        let delta = Int((Double(75 * blockCount) * streakMultiplier * victoryMultiplier).rounded())
+        state.surge -= overdriveThreshold
+        let chainMultiplier = 1.0 + Double(max(0, state.chain - 1)) * 0.5
+        let yieldValue = yield(forTally: state.tally)
+        let delta = Int((Double(75 * blockCount) * chainMultiplier * yieldValue).rounded())
         state.score += delta
-        state.signal = min(maxSignal, state.signal + 8)
-        state.level = level(forScore: state.score, moves: state.moves)
+        state.pulse = min(maxPulse, state.pulse + 8)
+        state.tier = tier(forScore: state.score, moves: state.moves)
 
-        let summary = CoreBurstSummary(clearedCount: blockCount, line: target, scoreDelta: delta)
-        state.lastCoreBurst = summary
+        let summary = OverdriveSummary(clearedCount: blockCount, line: target, scoreDelta: delta)
+        state.lastOverdrive = summary
         return summary
     }
 
