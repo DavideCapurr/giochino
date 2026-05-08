@@ -10,8 +10,12 @@ enum AdMobConfiguration {
         #if DEBUG
         testBannerAdUnitID
         #else
-        productionBannerAdUnitID
+        isRunningFromTestFlight ? testBannerAdUnitID : productionBannerAdUnitID
         #endif
+    }
+
+    private static var isRunningFromTestFlight: Bool {
+        Bundle.main.appStoreReceiptURL?.lastPathComponent == "sandboxReceipt"
     }
 }
 
@@ -40,6 +44,7 @@ private struct BannerViewContainer: UIViewRepresentable {
         banner.delegate = context.coordinator
         Task { @MainActor in
             await TrackingAuthorization.requestIfNeeded()
+            MobileAds.shared.start()
             banner.load(Request())
         }
         return banner

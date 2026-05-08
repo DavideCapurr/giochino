@@ -250,3 +250,4 @@ enum PaywallConstants {
     static let privacyURL = LegalLinks.privacyURL
     static let manageSubscriptionURL = LegalLinks.manageSubscriptionURL
 }
+
