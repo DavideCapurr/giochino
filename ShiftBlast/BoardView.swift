@@ -106,15 +106,15 @@ private struct BlockView: View {
     var body: some View {
         let baseColor = isClearing ? Color.white : block.tone.color
         let spawnPulse = CGFloat((sin(now.timeIntervalSinceReferenceDate * 16) + 1) / 2)
-        let primaryGlow = isSpawning ? 0.5 + spawnPulse * 0.22 : 0
-        let secondaryGlow = isSpawning ? 0.3 : 0
+        let primaryGlow = isSpawning ? 0.6 + spawnPulse * 0.22 : 0.55
+        let secondaryGlow = isSpawning ? 0.35 : 0.28
 
         RoundedRectangle(cornerRadius: 6, style: .continuous)
             .fill(
                 LinearGradient(
                     colors: [
-                        baseColor.opacity(isSpawning ? 0.92 : 1),
-                        baseColor.opacity(isClearing ? 0.72 : 0.78)
+                        baseColor.opacity(isSpawning ? 0.96 : 1),
+                        baseColor.opacity(isClearing ? 0.85 : 0.94)
                     ],
                     startPoint: .topLeading,
                     endPoint: .bottomTrailing
@@ -122,11 +122,11 @@ private struct BlockView: View {
             )
             .overlay(
                 RoundedRectangle(cornerRadius: 6, style: .continuous)
-                    .stroke(.white.opacity(isClearing ? 0.9 : 0.34), lineWidth: 1)
+                    .stroke(baseColor.opacity(isClearing ? 0.95 : 0.7), lineWidth: 1)
             )
             .overlay(alignment: .topLeading) {
                 RoundedRectangle(cornerRadius: 5, style: .continuous)
-                    .fill(.white.opacity(isClearing ? 0.48 : 0.16))
+                    .fill(.white.opacity(isClearing ? 0.5 : 0.2))
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
                     .mask(
                         LinearGradient(
@@ -137,8 +137,8 @@ private struct BlockView: View {
                     )
                     .padding(2)
             }
-            .shadow(color: baseColor.opacity(primaryGlow), radius: isSpawning ? 13 : 0)
-            .shadow(color: baseColor.opacity(secondaryGlow), radius: isSpawning ? 26 : 0)
+            .shadow(color: baseColor.opacity(primaryGlow), radius: isSpawning ? 14 : 8)
+            .shadow(color: baseColor.opacity(secondaryGlow), radius: isSpawning ? 26 : 18)
     }
 }
 
@@ -156,12 +156,12 @@ extension BlockTone {
 }
 
 extension Color {
-    static let shiftCyan = Color(red: 0.15, green: 0.94, blue: 1.0)
-    static let shiftPink = Color(red: 1.0, green: 0.18, blue: 0.62)
-    static let shiftLime = Color(red: 0.47, green: 1.0, blue: 0.25)
-    static let shiftYellow = Color(red: 1.0, green: 0.9, blue: 0.2)
-    static let shiftOrange = Color(red: 1.0, green: 0.45, blue: 0.16)
-    static let shiftViolet = Color(red: 0.64, green: 0.38, blue: 1.0)
+    static let shiftCyan = Color(red: 0.0, green: 0.97, blue: 1.0)
+    static let shiftPink = Color(red: 1.0, green: 0.08, blue: 0.58)
+    static let shiftLime = Color(red: 0.4, green: 1.0, blue: 0.15)
+    static let shiftYellow = Color(red: 1.0, green: 0.96, blue: 0.1)
+    static let shiftOrange = Color(red: 1.0, green: 0.5, blue: 0.08)
+    static let shiftViolet = Color(red: 0.6, green: 0.28, blue: 1.0)
 
     // Board grid — oklch(0.1 0.04 260) dark indigo
     static let nightBoardBg     = Color(red: 0.06, green: 0.07, blue: 0.11)
