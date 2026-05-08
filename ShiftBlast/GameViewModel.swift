@@ -188,7 +188,7 @@ final class GameViewModel: ObservableObject {
         let previousScore = state.score
         let outcome = GameEngine.finishActiveMove(in: &state)
         evaluateRecordNotice(previousScore: previousScore)
-        if !outcome.clearedLines.isEmpty {
+        if !outcome.clearedBlockIDs.isEmpty {
             feedback.clear()
             spawnAfterDelay(0.16)
         } else {
