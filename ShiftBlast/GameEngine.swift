@@ -71,11 +71,12 @@ enum GameEngine {
     static func finishActiveMove(in state: inout GameState) -> MoveOutcome {
         state.activeMove = nil
         let clearResult = clearCompletedLines(in: &state)
+        triggerOverdriveIfReady(in: &state)
         state.bestScore = max(state.bestScore, state.score)
 
         return MoveOutcome(
             clearedLines: clearResult.lines,
-            clearedBlockIDs: clearResult.blockIDs,
+            clearedBlockIDs: state.clearingBlockIDs,
             scoreDelta: clearResult.scoreDelta,
             spawnedBlockIDs: [],
             didGameOver: state.isGameOver
@@ -85,7 +86,6 @@ enum GameEngine {
     @discardableResult
     static func spawnAfterMove(in state: inout GameState) -> MoveOutcome {
         removeClearedBlocks(in: &state)
-        triggerOverdriveIfReady(in: &state)
         guard !state.isGameOver else {
             return MoveOutcome(
                 clearedLines: [],
@@ -481,15 +481,19 @@ enum GameEngine {
     @discardableResult
     static func triggerOverdriveIfReady(in state: inout GameState) -> OverdriveSummary? {
         guard state.surge >= overdriveThreshold else { return nil }
-        guard let target = densestLine(in: state) else { return nil }
+        let alreadyClearing = state.clearingBlockIDs
+        guard let target = densestLine(in: state, excluding: alreadyClearing) else { return nil }
 
-        let blockCount: Int
-        switch target {
-        case .row(let row):
-            blockCount = state.blocks.filter { $0.position.row == row }.count
-        case .column(let column):
-            blockCount = state.blocks.filter { $0.position.column == column }.count
-        }
+        let targetIDs = Set(state.blocks.compactMap { block -> UUID? in
+            if alreadyClearing.contains(block.id) { return nil }
+            switch target {
+            case .row(let row):
+                return block.position.row == row ? block.id : nil
+            case .column(let column):
+                return block.position.column == column ? block.id : nil
+            }
+        })
+        let blockCount = targetIDs.count
         guard blockCount > 0 else { return nil }
 
         state.surge -= overdriveThreshold
@@ -500,15 +504,8 @@ enum GameEngine {
         state.pulse = min(maxPulse, state.pulse + 8)
         state.tier = tier(forScore: state.score, moves: state.moves)
 
+        state.clearingBlockIDs.formUnion(targetIDs)
         let summary = OverdriveSummary(clearedCount: blockCount, line: target, scoreDelta: delta)
-        state.blocks.removeAll { block in
-            switch target {
-            case .row(let row):
-                return block.position.row == row
-            case .column(let column):
-                return block.position.column == column
-            }
-        }
         state.lastOverdrive = summary
         return summary
     }
@@ -526,12 +523,13 @@ enum GameEngine {
         }
     }
 
-    private static func densestLine(in state: GameState) -> ClearedLine? {
+    private static func densestLine(in state: GameState, excluding excluded: Set<UUID> = []) -> ClearedLine? {
+        let activeBlocks = excluded.isEmpty ? state.blocks : state.blocks.filter { !excluded.contains($0.id) }
         let rows = (0..<state.boardSize).map { row in
-            (ClearedLine.row(row), state.blocks.filter { $0.position.row == row }.count)
+            (ClearedLine.row(row), activeBlocks.filter { $0.position.row == row }.count)
         }
         let columns = (0..<state.boardSize).map { column in
-            (ClearedLine.column(column), state.blocks.filter { $0.position.column == column }.count)
+            (ClearedLine.column(column), activeBlocks.filter { $0.position.column == column }.count)
         }
 
         return (rows + columns)
