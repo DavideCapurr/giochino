@@ -1,6 +1,7 @@
 import SwiftUI
 import UIKit
 import GoogleMobileAds
+import UserMessagingPlatform
 
 enum AdMobConfiguration {
     static let testBannerAdUnitID = "ca-app-pub-3940256099942544/2435281174"
@@ -39,8 +40,8 @@ private struct BannerViewContainer: UIViewRepresentable {
         banner.adUnitID = adUnitID
         banner.delegate = context.coordinator
         Task { @MainActor in
-            await TrackingAuthorization.requestIfNeeded()
-            await MobileAds.shared.start()
+            banner.rootViewController = UIApplication.shared.adMobTopViewController()
+            guard await AdMobStartup.prepareForAdRequests(from: banner.rootViewController) else { return }
             banner.load(Request())
         }
         return banner
@@ -48,6 +49,7 @@ private struct BannerViewContainer: UIViewRepresentable {
 
     func updateUIView(_ banner: BannerView, context: Context) {
         banner.adUnitID = adUnitID
+        banner.rootViewController = UIApplication.shared.adMobTopViewController()
     }
 
     func makeCoordinator() -> BannerCoordinator {
@@ -56,9 +58,76 @@ private struct BannerViewContainer: UIViewRepresentable {
 }
 
 private final class BannerCoordinator: NSObject, BannerViewDelegate {
+    func bannerViewDidReceiveAd(_ bannerView: BannerView) {
+        #if DEBUG
+        print("AdMob banner loaded.")
+        #endif
+    }
+
     func bannerView(_ bannerView: BannerView, didFailToReceiveAdWithError error: Error) {
         #if DEBUG
         print("AdMob banner failed to load: \(error.localizedDescription)")
         #endif
+    }
+}
+
+@MainActor
+private enum AdMobStartup {
+    private static var didStartMobileAds = false
+
+    static func prepareForAdRequests(from viewController: UIViewController?) async -> Bool {
+        await gatherConsent(from: viewController)
+        guard ConsentInformation.shared.canRequestAds else {
+            #if DEBUG
+            print("AdMob cannot request ads yet: consent is not available.")
+            #endif
+            return false
+        }
+
+        await TrackingAuthorization.requestIfNeeded()
+
+        if !didStartMobileAds {
+            await MobileAds.shared.start()
+            didStartMobileAds = true
+        }
+
+        return true
+    }
+
+    private static func gatherConsent(from viewController: UIViewController?) async {
+        let parameters = RequestParameters()
+
+        do {
+            try await ConsentInformation.shared.requestConsentInfoUpdate(with: parameters)
+            try await ConsentForm.loadAndPresentIfRequired(from: viewController)
+        } catch {
+            #if DEBUG
+            print("AdMob consent flow error: \(error.localizedDescription)")
+            #endif
+        }
+    }
+}
+
+private extension UIApplication {
+    func adMobTopViewController(
+        base: UIViewController? = UIApplication.shared.connectedScenes
+            .compactMap { $0 as? UIWindowScene }
+            .flatMap(\.windows)
+            .first { $0.isKeyWindow }?
+            .rootViewController
+    ) -> UIViewController? {
+        if let navigationController = base as? UINavigationController {
+            return adMobTopViewController(base: navigationController.visibleViewController)
+        }
+
+        if let tabBarController = base as? UITabBarController {
+            return adMobTopViewController(base: tabBarController.selectedViewController)
+        }
+
+        if let presentedViewController = base?.presentedViewController {
+            return adMobTopViewController(base: presentedViewController)
+        }
+
+        return base
     }
 }

@@ -1,5 +1,4 @@
 import SwiftUI
-import GoogleMobileAds
 
 @main
 struct ShiftBlastApp: App {
@@ -14,8 +13,6 @@ struct ShiftBlastApp: App {
                 .environmentObject(subscriptionStore)
                 .environmentObject(gameCenter)
                 .task {
-                    await TrackingAuthorization.requestIfNeeded()
-                    await MobileAds.shared.start()
                     await subscriptionStore.configure()
                     gameCenter.authenticate()
                     viewModel.bindGameCenter(gameCenter)
