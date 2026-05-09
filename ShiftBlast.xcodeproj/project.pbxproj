@@ -24,14 +24,14 @@
 		0A0000010000000000000011 /* AgentBridgeTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000010000000000000111 /* AgentBridgeTests.swift */; };
 		0A0000020000000000000010 /* RelayApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000020000000000000110 /* RelayApp.swift */; };
 		0A0000020000000000000011 /* RelayCoordinator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000020000000000000111 /* RelayCoordinator.swift */; };
-			0A0000020000000000000012 /* RelayMenuView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000020000000000000112 /* RelayMenuView.swift */; };
-			0A0000020000000000000014 /* SessionFileWatcher.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000020000000000000114 /* SessionFileWatcher.swift */; };
-			0A0000020000000000000015 /* BookmarkStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000020000000000000115 /* BookmarkStore.swift */; };
-			0A0000020000000000000016 /* SentinelWriter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000020000000000000116 /* SentinelWriter.swift */; };
-			0A0000020000000000000017 /* LoginItemManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000020000000000000117 /* LoginItemManager.swift */; };
-			0A0000020000000000000018 /* AgentNames.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000020000000000000118 /* AgentNames.swift */; };
-			0A0000020000000000000019 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 0A000001000000000000010A /* Assets.xcassets */; };
-			0A000002000000000000001A /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = 0A0000020000000000000119 /* PrivacyInfo.xcprivacy */; };
+		0A0000020000000000000012 /* RelayMenuView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000020000000000000112 /* RelayMenuView.swift */; };
+		0A0000020000000000000014 /* SessionFileWatcher.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000020000000000000114 /* SessionFileWatcher.swift */; };
+		0A0000020000000000000015 /* BookmarkStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000020000000000000115 /* BookmarkStore.swift */; };
+		0A0000020000000000000016 /* SentinelWriter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000020000000000000116 /* SentinelWriter.swift */; };
+		0A0000020000000000000017 /* LoginItemManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000020000000000000117 /* LoginItemManager.swift */; };
+		0A0000020000000000000018 /* AgentNames.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000020000000000000118 /* AgentNames.swift */; };
+		0A0000020000000000000019 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 0A000001000000000000010A /* Assets.xcassets */; };
+		0A000002000000000000001A /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = 0A0000020000000000000119 /* PrivacyInfo.xcprivacy */; };
 		4AF945822FA93CFC00ED7248 /* PaywallView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4AF945802FA93CFC00ED7248 /* PaywallView.swift */; };
 		4AF945832FA93CFC00ED7248 /* SubscriptionStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4AF945812FA93CFC00ED7248 /* SubscriptionStore.swift */; };
 		4AF945852FA93D4700ED7248 /* ShiftBlast.storekit in Resources */ = {isa = PBXBuildFile; fileRef = 4AF945842FA93D4700ED7248 /* ShiftBlast.storekit */; };
@@ -80,11 +80,11 @@
 		0A0000020000000000000112 /* RelayMenuView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RelayMenuView.swift; sourceTree = "<group>"; };
 		0A0000020000000000000113 /* ProcessWatcher.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProcessWatcher.swift; sourceTree = "<group>"; };
 		0A0000020000000000000114 /* SessionFileWatcher.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SessionFileWatcher.swift; sourceTree = "<group>"; };
-			0A0000020000000000000115 /* BookmarkStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BookmarkStore.swift; sourceTree = "<group>"; };
-			0A0000020000000000000116 /* SentinelWriter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SentinelWriter.swift; sourceTree = "<group>"; };
-			0A0000020000000000000117 /* LoginItemManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LoginItemManager.swift; sourceTree = "<group>"; };
-			0A0000020000000000000118 /* AgentNames.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AgentNames.swift; sourceTree = "<group>"; };
-			0A0000020000000000000119 /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
+		0A0000020000000000000115 /* BookmarkStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BookmarkStore.swift; sourceTree = "<group>"; };
+		0A0000020000000000000116 /* SentinelWriter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SentinelWriter.swift; sourceTree = "<group>"; };
+		0A0000020000000000000117 /* LoginItemManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LoginItemManager.swift; sourceTree = "<group>"; };
+		0A0000020000000000000118 /* AgentNames.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AgentNames.swift; sourceTree = "<group>"; };
+		0A0000020000000000000119 /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
 		4A32BBB62FA16BB300EAC0E5 /* ShiftBlast.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = ShiftBlast.entitlements; sourceTree = "<group>"; };
 		4AF945802FA93CFC00ED7248 /* PaywallView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PaywallView.swift; sourceTree = "<group>"; };
 		4AF945812FA93CFC00ED7248 /* SubscriptionStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SubscriptionStore.swift; sourceTree = "<group>"; };
@@ -315,22 +315,22 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
-			0A0000010000000000000602 /* Resources */ = {
-				isa = PBXResourcesBuildPhase;
-				buildActionMask = 2147483647;
-				files = (
-				);
-				runOnlyForDeploymentPostprocessing = 0;
-			};
-			0A0000020000000000000601 /* Resources */ = {
-				isa = PBXResourcesBuildPhase;
-				buildActionMask = 2147483647;
-				files = (
-					0A000002000000000000001A /* PrivacyInfo.xcprivacy in Resources */,
-					0A0000020000000000000019 /* Assets.xcassets in Resources */,
-				);
-				runOnlyForDeploymentPostprocessing = 0;
-			};
+		0A0000010000000000000602 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		0A0000020000000000000601 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				0A000002000000000000001A /* PrivacyInfo.xcprivacy in Resources */,
+				0A0000020000000000000019 /* Assets.xcassets in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXResourcesBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
@@ -515,7 +515,7 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_ENTITLEMENTS = ShiftBlast/ShiftBlast.entitlements;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 2;
+				CURRENT_PROJECT_VERSION = 3;
 				DEVELOPMENT_ASSET_PATHS = "";
 				DEVELOPMENT_TEAM = 2MY3NF258J;
 				ENABLE_PREVIEWS = YES;
@@ -545,7 +545,7 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_ENTITLEMENTS = ShiftBlast/ShiftBlast.entitlements;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 2;
+				CURRENT_PROJECT_VERSION = 3;
 				DEVELOPMENT_ASSET_PATHS = "";
 				DEVELOPMENT_TEAM = 2MY3NF258J;
 				ENABLE_PREVIEWS = YES;
@@ -606,54 +606,54 @@
 				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/ShiftBlast.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/ShiftBlast";
 			};
 			name = Release;
-			};
-			0A0000020000000000000A01 /* Debug */ = {
-				isa = XCBuildConfiguration;
-				buildSettings = {
-					ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
-					CODE_SIGN_ENTITLEMENTS = ShiftBlastRelay/ShiftBlastRelay.entitlements;
-					CODE_SIGN_STYLE = Automatic;
-					COMBINE_HIDPI_IMAGES = YES;
+		};
+		0A0000020000000000000A01 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_ENTITLEMENTS = ShiftBlastRelay/ShiftBlastRelay.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				COMBINE_HIDPI_IMAGES = YES;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_ASSET_PATHS = "";
 				DEVELOPMENT_TEAM = 2MY3NF258J;
-					ENABLE_PREVIEWS = YES;
-					GENERATE_INFOPLIST_FILE = YES;
-					INFOPLIST_KEY_CFBundleDisplayName = "ShiftBlast Relay";
-					INFOPLIST_KEY_LSUIElement = YES;
-					INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.utilities";
-					MACOSX_DEPLOYMENT_TARGET = 14.0;
-					MARKETING_VERSION = 1.0;
-					PRODUCT_BUNDLE_IDENTIFIER = com.davide.shiftblast.relay;
-					PRODUCT_NAME = "$(TARGET_NAME)";
-					SDKROOT = macosx;
-					SUPPORTED_PLATFORMS = macosx;
+				ENABLE_PREVIEWS = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_CFBundleDisplayName = "ShiftBlast Relay";
+				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.utilities";
+				INFOPLIST_KEY_LSUIElement = YES;
+				MACOSX_DEPLOYMENT_TARGET = 14.0;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.davide.shiftblast.relay;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = macosx;
+				SUPPORTED_PLATFORMS = macosx;
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_VERSION = 5.0;
 			};
 			name = Debug;
-			};
-			0A0000020000000000000A02 /* Release */ = {
-				isa = XCBuildConfiguration;
-				buildSettings = {
-					ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
-					CODE_SIGN_ENTITLEMENTS = ShiftBlastRelay/ShiftBlastRelay.entitlements;
-					CODE_SIGN_STYLE = Automatic;
-					COMBINE_HIDPI_IMAGES = YES;
+		};
+		0A0000020000000000000A02 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_ENTITLEMENTS = ShiftBlastRelay/ShiftBlastRelay.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				COMBINE_HIDPI_IMAGES = YES;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_ASSET_PATHS = "";
 				DEVELOPMENT_TEAM = 2MY3NF258J;
-					ENABLE_PREVIEWS = YES;
-					GENERATE_INFOPLIST_FILE = YES;
-					INFOPLIST_KEY_CFBundleDisplayName = "ShiftBlast Relay";
-					INFOPLIST_KEY_LSUIElement = YES;
-					INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.utilities";
-					MACOSX_DEPLOYMENT_TARGET = 14.0;
-					MARKETING_VERSION = 1.0;
-					PRODUCT_BUNDLE_IDENTIFIER = com.davide.shiftblast.relay;
-					PRODUCT_NAME = "$(TARGET_NAME)";
-					SDKROOT = macosx;
-					SUPPORTED_PLATFORMS = macosx;
+				ENABLE_PREVIEWS = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_CFBundleDisplayName = "ShiftBlast Relay";
+				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.utilities";
+				INFOPLIST_KEY_LSUIElement = YES;
+				MACOSX_DEPLOYMENT_TARGET = 14.0;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.davide.shiftblast.relay;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = macosx;
+				SUPPORTED_PLATFORMS = macosx;
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_VERSION = 5.0;
 			};
