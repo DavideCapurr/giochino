@@ -10,9 +10,9 @@ struct MoveOutcome: Equatable {
 
 enum GameEngine {
     static let defaultBoardSize = 8
-    static let initialEmptyCellRange = 20..<30
+    static let initialEmptyCellRange = 22..<34
     static let slideDuration: TimeInterval = 0.24
-    static let scorePerLine = 300
+    static let scorePerLine = 400
     static let overdriveThreshold = 90
     static let maxPulse = 100
 
@@ -298,13 +298,13 @@ enum GameEngine {
     }
 
     static func difficultyCoefficient(forScore score: Int, moves: Int, tally: Int) -> Double {
-        1 + Double(max(0, moves)) * 0.006 + Double(max(0, tally)) * 0.045 + Double(max(0, score)) / 8_000
+        1 + Double(max(0, moves)) * 0.0028 + Double(max(0, tally)) * 0.022 + Double(max(0, score)) / 14_000
     }
 
     static func pulseDrain(forDifficulty difficulty: Double, rng: inout SeededGenerator) -> Int {
-        let base = min(18, 6 + Int((max(1, difficulty) - 1) * 1.5))
-        let jitter = difficulty < 1.2 ? 0 : rng.nextInt(in: -2..<3)
-        return max(3, base + jitter)
+        let base = min(12, 3 + Int((max(1, difficulty) - 1) * 1.1))
+        let jitter = difficulty < 1.05 ? 0 : rng.nextInt(in: -3..<6)
+        return max(1, base + jitter)
     }
 
     static func pulseGain(forLineCount lineCount: Int, chain: Int = 0, difficulty: Double = 1) -> Int {
@@ -315,9 +315,9 @@ enum GameEngine {
         case 2: base = 12
         default: base = 20
         }
-        let raw = base + min(8, max(0, chain) * 1)
-        let decay = max(0.4, 1.0 - (difficulty - 1) * 0.06)
-        return max(2, Int((Double(raw) * decay).rounded()))
+        let raw = base + min(10, max(0, chain) * 2)
+        let decay = max(0.55, 1.0 - (difficulty - 1) * 0.04)
+        return max(3, Int((Double(raw) * decay).rounded()))
     }
 
     static func chainBonus(forChain chain: Int, difficulty: Double) -> Int {
@@ -344,13 +344,16 @@ enum GameEngine {
     static func incomingBlockCount(forXP xp: Double, rng: inout SeededGenerator) -> Int {
         switch xp {
         case ..<1.15:
-            return rng.nextBool(probability: 0.3) ? 3 : 2
-        case ..<1.35:
-            return 2
-        case ..<1.7:
-            return rng.nextBool(probability: 0.4) ? 2 : 1
-        default:
+            let roll = rng.nextInt(in: 0..<10)
+            if roll < 2 { return 3 }
+            if roll < 7 { return 2 }
             return 1
+        case ..<1.35:
+            return rng.nextBool(probability: 0.35) ? 1 : 2
+        case ..<1.7:
+            return rng.nextBool(probability: 0.55) ? 1 : 2
+        default:
+            return rng.nextBool(probability: 0.85) ? 1 : 2
         }
     }
 
@@ -400,17 +403,15 @@ enum GameEngine {
     }
 
     static func clearCompletedLines(in state: inout GameState) -> (lines: [ClearedLine], blockIDs: Set<UUID>, scoreDelta: Int) {
-        let occupied = Set(state.blocks.map(\.position))
-        let rows = (0..<state.boardSize).filter { row in
-            (0..<state.boardSize).allSatisfy { column in
-                occupied.contains(GridPoint(row: row, column: column))
-            }
+        let size = state.boardSize
+        var rowCounts = [Int](repeating: 0, count: size)
+        var columnCounts = [Int](repeating: 0, count: size)
+        for block in state.blocks {
+            rowCounts[block.position.row] += 1
+            columnCounts[block.position.column] += 1
         }
-        let columns = (0..<state.boardSize).filter { column in
-            (0..<state.boardSize).allSatisfy { row in
-                occupied.contains(GridPoint(row: row, column: column))
-            }
-        }
+        let rows = (0..<size).filter { rowCounts[$0] == size }
+        let columns = (0..<size).filter { columnCounts[$0] == size }
 
         let lines = rows.map(ClearedLine.row) + columns.map(ClearedLine.column)
         guard !lines.isEmpty else {
@@ -524,18 +525,21 @@ enum GameEngine {
     }
 
     private static func densestLine(in state: GameState, excluding excluded: Set<UUID> = []) -> ClearedLine? {
-        let activeBlocks = excluded.isEmpty ? state.blocks : state.blocks.filter { !excluded.contains($0.id) }
-        let rows = (0..<state.boardSize).map { row in
-            (ClearedLine.row(row), activeBlocks.filter { $0.position.row == row }.count)
+        let size = state.boardSize
+        var rowCounts = [Int](repeating: 0, count: size)
+        var columnCounts = [Int](repeating: 0, count: size)
+        for block in state.blocks where !excluded.contains(block.id) {
+            rowCounts[block.position.row] += 1
+            columnCounts[block.position.column] += 1
         }
-        let columns = (0..<state.boardSize).map { column in
-            (ClearedLine.column(column), activeBlocks.filter { $0.position.column == column }.count)
+        var best: (line: ClearedLine, count: Int)?
+        for row in 0..<size where rowCounts[row] > (best?.count ?? 0) {
+            best = (.row(row), rowCounts[row])
         }
-
-        return (rows + columns)
-            .filter { $0.1 > 0 }
-            .max { lhs, rhs in lhs.1 < rhs.1 }?
-            .0
+        for column in 0..<size where columnCounts[column] > (best?.count ?? 0) {
+            best = (.column(column), columnCounts[column])
+        }
+        return best?.line
     }
 
     private static func compressedPositions(for blocks: [GameBlock], boardSize: Int, direction: SwipeDirection) -> [UUID: GridPoint] {

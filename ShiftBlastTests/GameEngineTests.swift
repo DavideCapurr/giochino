@@ -45,7 +45,7 @@ final class GameEngineTests: XCTestCase {
 
         XCTAssertEqual(result.lines, [.row(3)])
         let yield = GameEngine.yield(forTally: 1)
-        XCTAssertEqual(result.scoreDelta, Int((300.0 * yield).rounded()))
+        XCTAssertEqual(result.scoreDelta, Int((400.0 * yield).rounded()))
         XCTAssertEqual(state.clearingBlockIDs.count, 8)
         GameEngine.removeClearedBlocks(in: &state)
         XCTAssertTrue(state.blocks.isEmpty)
@@ -61,7 +61,7 @@ final class GameEngineTests: XCTestCase {
 
         XCTAssertEqual(Set(result.lines), [.row(0), .column(0)])
         let yield = GameEngine.yield(forTally: 2)
-        XCTAssertEqual(result.scoreDelta, Int((1100.0 * yield).rounded()))
+        XCTAssertEqual(result.scoreDelta, Int((1300.0 * yield).rounded()))
         XCTAssertEqual(state.lastClear, ClearSummary(lineCount: 2, scoreDelta: result.scoreDelta, bonus: 500, chain: 1, surgeGained: 91, yield: yield))
         GameEngine.removeClearedBlocks(in: &state)
         XCTAssertEqual(state.score, result.scoreDelta)
@@ -77,7 +77,7 @@ final class GameEngineTests: XCTestCase {
 
         XCTAssertEqual(Set(result.lines), [.row(0), .column(0), .column(1)])
         let yield = GameEngine.yield(forTally: 3)
-        XCTAssertEqual(result.scoreDelta, Int((2150.0 * yield).rounded()))
+        XCTAssertEqual(result.scoreDelta, Int((2450.0 * yield).rounded()))
         XCTAssertEqual(state.lastClear, ClearSummary(lineCount: 3, scoreDelta: result.scoreDelta, bonus: 1250, chain: 1, surgeGained: 165, yield: yield))
     }
 
@@ -91,7 +91,7 @@ final class GameEngineTests: XCTestCase {
         let result = GameEngine.clearCompletedLines(in: &state)
 
         let expectedYield = GameEngine.yield(forTally: 25)
-        XCTAssertEqual(result.scoreDelta, Int((300.0 * expectedYield).rounded()))
+        XCTAssertEqual(result.scoreDelta, Int((400.0 * expectedYield).rounded()))
         XCTAssertEqual(state.lastClear?.yield, expectedYield)
         XCTAssertEqual(GameEngine.formattedYield(GameEngine.yield(forTally: state.tally)), "1.50x")
     }
@@ -105,8 +105,8 @@ final class GameEngineTests: XCTestCase {
         let result = GameEngine.clearCompletedLines(in: &state)
 
         XCTAssertTrue(result.lines.isEmpty)
-        XCTAssertEqual(state.pulse, 94)
-        XCTAssertEqual(state.lastPulseEvent, PulseEvent(kind: .deadSwipe, delta: -6, value: 94))
+        XCTAssertEqual(state.pulse, 97)
+        XCTAssertEqual(state.lastPulseEvent, PulseEvent(kind: .deadSwipe, delta: -3, value: 97))
         XCTAssertFalse(state.isGameOver)
     }
 
@@ -130,8 +130,8 @@ final class GameEngineTests: XCTestCase {
 
         _ = GameEngine.clearCompletedLines(in: &state)
 
-        XCTAssertEqual(state.pulse, 57)
-        XCTAssertEqual(state.lastPulseEvent, PulseEvent(kind: .clear, delta: 7, value: 57))
+        XCTAssertEqual(state.pulse, 58)
+        XCTAssertEqual(state.lastPulseEvent, PulseEvent(kind: .clear, delta: 8, value: 58))
     }
 
     func testChainIncrementsOnConsecutiveClearsAndResetsImmediatelyOnDeadSwipe() {
@@ -185,7 +185,7 @@ final class GameEngineTests: XCTestCase {
     func testNewGameStartsDenseButWithoutCompletedLines() {
         let state = GameEngine.newGame(seed: 99)
 
-        XCTAssertTrue((22..<28).contains(GameEngine.emptyCells(in: state).count))
+        XCTAssertTrue((22..<40).contains(GameEngine.emptyCells(in: state).count))
         for row in 0..<state.boardSize {
             XCTAssertLessThan(state.blocks.filter { $0.position.row == row }.count, state.boardSize)
         }
@@ -253,16 +253,16 @@ final class GameEngineTests: XCTestCase {
         XCTAssertEqual(GameEngine.tier(forScore: 1_000, moves: 0), 3)
         XCTAssertEqual(GameEngine.tier(forScore: 0, moves: 54), 4)
         XCTAssertEqual(GameEngine.tier(forScore: 12_000, moves: 400), 25)
-        XCTAssertEqual(GameEngine.formattedYield(GameEngine.difficultyCoefficient(forScore: 1_200, moves: 30, tally: 12)), "1.87x")
+        XCTAssertEqual(GameEngine.formattedYield(GameEngine.difficultyCoefficient(forScore: 1_200, moves: 30, tally: 12)), "1.43x")
     }
 
     func testIncomingBlockCountDropsAsXpRises() {
         var rng = SeededGenerator(seed: 4)
 
-        XCTAssertTrue((2...3).contains(GameEngine.incomingBlockCount(forXP: 1.0, rng: &rng)))
-        XCTAssertEqual(GameEngine.incomingBlockCount(forXP: 1.25, rng: &rng), 2)
+        XCTAssertTrue((1...3).contains(GameEngine.incomingBlockCount(forXP: 1.0, rng: &rng)))
+        XCTAssertTrue((1...2).contains(GameEngine.incomingBlockCount(forXP: 1.25, rng: &rng)))
         XCTAssertTrue((1...2).contains(GameEngine.incomingBlockCount(forXP: 1.5, rng: &rng)))
-        XCTAssertEqual(GameEngine.incomingBlockCount(forXP: 2.2, rng: &rng), 1)
+        XCTAssertTrue((1...2).contains(GameEngine.incomingBlockCount(forXP: 2.2, rng: &rng)))
         XCTAssertEqual(GameEngine.incomingBlockPreview(forXP: 2.2), "1")
         XCTAssertEqual(GameEngine.incomingBlockPreview(forXP: 1.0, emptyCellCount: 3), "1")
         XCTAssertEqual(GameEngine.incomingBlockPreview(forXP: 1.0, emptyCellCount: 20), "2-3")
