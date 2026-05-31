@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<style>
+  @page { margin: 1.8cm 2cm; }
+  body { font-family: "Liberation Sans", Arial, sans-serif; color: #1a1a1a; font-size: 11pt; line-height: 1.5; }
+  h1 { font-size: 26pt; margin: 0 0 4px 0; color: #0b1f3a; }
+  h2 { font-size: 14pt; color: #0b1f3a; border-bottom: 2px solid #2b5fd1; padding-bottom: 3px; margin-top: 22px; }
+  h3 { font-size: 11.5pt; margin-bottom: 2px; color: #16345f; }
+  p { margin: 6px 0; text-align: justify; }
+  .cover { text-align: center; margin-top: 60px; }
+  .cover img { width: 150px; height: 150px; border-radius: 30px; }
+  .sub { font-size: 13pt; color: #444; margin-top: 2px; }
+  .meta { font-size: 10.5pt; color: #666; margin-top: 28px; }
+  ul { margin: 4px 0 8px 0; }
+  li { margin: 3px 0; }
+  .tech td { padding: 4px 8px; vertical-align: top; border-bottom: 1px solid #e2e2e2; font-size: 10.5pt; }
+  .tech td.k { font-weight: bold; color: #16345f; width: 34%; }
+  .step { margin: 8px 0; }
+  .step b { color: #16345f; }
+  .pagebreak { page-break-before: always; }
+  code { background: #f0f3f8; padding: 1px 4px; font-family: "Liberation Mono", monospace; font-size: 9.5pt; }
+</style>
+</head>
+<body>
+
+<div class="cover">
+  <img src="../ShiftBlast/Assets.xcassets/AppIcon.appiconset/block-blast-icon-1024.png" alt="ShiftBlast">
+  <h1>ShiftBlast</h1>
+  <div class="sub">Un gioco puzzle per iPhone e Mac, dall'idea alla pubblicazione</div>
+  <div class="meta">
+    Capolavoro dello studente &middot; Progetto individuale<br>
+    Progettazione, programmazione e pubblicazione: Davide Capurro
+  </div>
+</div>
+
+<h2>Cos'è ShiftBlast</h2>
+<p>ShiftBlast è un gioco puzzle che ho ideato e scritto da zero per iPhone e Mac. Si gioca su una griglia: con uno swipe si fanno scorrere tutti i blocchi nella stessa direzione, e quando una riga o una colonna si riempie viene eliminata. L'obiettivo è tenere la griglia libera il più a lungo possibile e fare punteggio.</p>
+<p>Le meccaniche che ho costruito vanno oltre il semplice "riempi la linea":</p>
+<ul>
+  <li><b>Chain</b> — eliminare più linee di fila aumenta il moltiplicatore: incatenare le mosse vale molto più che eliminarle una alla volta.</li>
+  <li><b>Overdrive</b> — riempiendo una barra di carica (soglia a 90) si attiva una pulizia speciale del tabellone, con la sua animazione dedicata.</li>
+  <li><b>Spawn riproducibili</b> — la generazione dei blocchi parte da un <code>seed</code>, così una partita può essere rigiocata identica. Mi è servito soprattutto per testare i bug.</li>
+</ul>
+<p>Il punteggio base è di 400 punti a linea, a cui si sommano i bonus di chain e overdrive. La difficoltà sale con il punteggio e con il numero di mosse, in livelli (tier) che ho tarato a mano.</p>
+
+<h2>Com'è fatto</h2>
+<p>L'ho scritto in <b>Swift</b> con <b>SwiftUI</b>. La scelta tecnica di cui sono più contento è aver separato nettamente la logica di gioco dall'interfaccia: tutte le regole stanno in un motore (<code>GameEngine</code>) fatto di funzioni pure su uno stato <code>Codable</code>, mentre le viste si limitano a disegnare quello stato. Questo mi ha permesso di cambiare animazioni e grafica senza toccare le regole, e di ritrovare i bug più facilmente.</p>
+<table class="tech">
+  <tr><td class="k">Linguaggio e UI</td><td>Swift, SwiftUI &middot; ~6.000 righe di codice in tutto il progetto</td></tr>
+  <tr><td class="k">Classifiche</td><td>Game Center con classifica personale e globale, più una schermata classifica a tutto schermo</td></tr>
+  <tr><td class="k">Social</td><td>Classifiche tra amici e notifiche quando un amico ti supera</td></tr>
+  <tr><td class="k">Monetizzazione</td><td>Abbonamento con StoreKit e schermata paywall; banner pubblicitari AdMob con richiesta di consenso</td></tr>
+  <tr><td class="k">Pubblicazione</td><td>Pubblicato sull'App Store; pagine Privacy e Termini ospitate su GitHub Pages</td></tr>
+  <tr><td class="k">Extra</td><td>App companion per Mac ("Relay") e una piccola landing page del gioco</td></tr>
+</table>
+
+<div class="pagebreak"></div>
+<h2>Il percorso che ho seguito</h2>
+<p>Non è nato già finito. L'ho costruito a tappe, e ogni tappa è rimasta registrata nella cronologia del progetto su Git:</p>
+
+<div class="step"><b>1. Prima versione giocabile.</b> Ho messo in piedi la griglia, lo scorrimento con swipe e l'eliminazione delle linee. Qui ho deciso la struttura del motore separato dalla UI, che poi ha pagato per tutto il resto.</div>
+<div class="step"><b>2. Preparazione all'App Store.</b> Per pubblicare ho dovuto sistemare i blocchi segnalati dalla review di Apple, scrivere e mettere online le pagine di Privacy e Termini, e collegarle dalle impostazioni dell'app.</div>
+<div class="step"><b>3. Classifiche Game Center.</b> Ho integrato l'accesso a Game Center con messaggi di login più chiari, e ho aggiunto la classifica con scheda personale e globale.</div>
+<div class="step"><b>4. Pubblicità con consenso.</b> Ho inizializzato AdMob usando annunci di test in TestFlight e quelli reali in produzione, gestendo la richiesta di consenso prima di mostrarli.</div>
+<div class="step"><b>5. Parte social.</b> Ho aggiunto le classifiche tra amici, le notifiche e un interruttore per attivarle o disattivarle.</div>
+
+<h2>Problemi veri che ho dovuto risolvere</h2>
+
+<h3>I blocchi sparivano senza animazione</h3>
+<p>Quando l'Overdrive ripuliva il tabellone, i blocchi venivano rimossi di colpo: sparivano e basta, senza l'animazione di eliminazione. Ho capito che il problema era il <i>punto</i> in cui li toglievo dallo stato. Ho fatto passare la rimozione attraverso lo stesso insieme di blocchi "in eliminazione" (<code>clearingBlockIDs</code>) usato dalle linee normali, così l'animazione parte anche per l'Overdrive.</p>
+
+<h3>La difficoltà saliva troppo in fretta</h3>
+<p>Le prime partite diventavano ingiocabili dopo poco e si somigliavano tutte. Ho ammorbidito la curva di difficoltà e reso più vari gli spawn, così le partite durano di più e ognuna è diversa dalla precedente.</p>
+
+<h3>Contrasto e leggibilità della griglia</h3>
+<p>Sui blocchi al neon non si distingueva bene quale fosse appena comparso. Ho alzato il contrasto dei blocchi e abbassato il bagliore di quelli fermi, in modo che la comparsa di un nuovo blocco "pulsasse" e si notasse.</p>
+
+<h2>Competenze che ho sviluppato</h2>
+<ul>
+  <li><b>Programmazione:</b> Swift e SwiftUI, separazione tra logica e interfaccia, gestione dello stato e animazioni.</li>
+  <li><b>Risoluzione di problemi:</b> riprodurre un bug (grazie al seed), capirne la causa reale e correggerlo invece di mascherarlo.</li>
+  <li><b>Pubblicazione di un prodotto:</b> requisiti dell'App Store, privacy e termini, abbonamenti, pubblicità e consenso.</li>
+  <li><b>Autonomia e costanza:</b> ho portato avanti il progetto da solo, a tappe, fino a farlo arrivare nelle mani di altre persone.</li>
+</ul>
+
+<p style="margin-top:18px; color:#444;"><i>ShiftBlast è il progetto in cui ho imparato di più, perché mi ha costretto a occuparmi di tutto: l'idea, il codice, i bug, la pubblicazione e le persone che poi ci giocano davvero.</i></p>
+
+</body>
+</html>
