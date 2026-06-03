@@ -7,6 +7,10 @@ private let log = Logger(subsystem: "com.davide.shiftblast", category: "Subscrip
 @MainActor
 final class SubscriptionStore: ObservableObject {
     nonisolated static let premiumMonthlyProductID = "com.shiftblast.premium.monthly"
+    /// One-time, non-consumable purchase that unlocks everything Premium does (AI agent
+    /// alert + no ads) with a single payment. Developers and supporters convert far better
+    /// on a lifetime unlock than on a recurring subscription.
+    nonisolated static let premiumLifetimeProductID = "com.shiftblast.premium.lifetime"
     /// One-time, non-consumable purchase that just removes ads. Converts far better than the
     /// monthly subscription for players who only want an ad-free game.
     nonisolated static let removeAdsProductID = "com.shiftblast.removeads"
@@ -33,12 +37,20 @@ final class SubscriptionStore: ObservableObject {
         products.first { $0.id == Self.premiumMonthlyProductID }
     }
 
+    var premiumLifetimeProduct: Product? {
+        products.first { $0.id == Self.premiumLifetimeProductID }
+    }
+
     var removeAdsProduct: Product? {
         products.first { $0.id == Self.removeAdsProductID }
     }
 
     var premiumDisplayPrice: String {
         premiumProduct?.displayPrice ?? "$2.99"
+    }
+
+    var premiumLifetimeDisplayPrice: String {
+        premiumLifetimeProduct?.displayPrice ?? "$9.99"
     }
 
     var removeAdsDisplayPrice: String {
@@ -48,7 +60,11 @@ final class SubscriptionStore: ObservableObject {
     private var updatesTask: Task<Void, Never>?
     private let productIDs: [String]
 
-    init(productIDs: [String] = [SubscriptionStore.premiumMonthlyProductID, SubscriptionStore.removeAdsProductID]) {
+    init(productIDs: [String] = [
+        SubscriptionStore.premiumMonthlyProductID,
+        SubscriptionStore.premiumLifetimeProductID,
+        SubscriptionStore.removeAdsProductID
+    ]) {
         self.productIDs = productIDs
     }
 
@@ -69,6 +85,14 @@ final class SubscriptionStore: ObservableObject {
             return
         }
         await purchase(premiumProduct)
+    }
+
+    func purchasePremiumLifetime() async {
+        guard let premiumLifetimeProduct else {
+            state = .failed("Lifetime Premium is not available yet.")
+            return
+        }
+        await purchase(premiumLifetimeProduct)
     }
 
     func purchaseRemoveAds() async {
@@ -162,6 +186,7 @@ final class SubscriptionStore: ObservableObject {
 
         let wasPremium = isPremium
         isPremium = entitledProductIDs.contains(Self.premiumMonthlyProductID)
+            || entitledProductIDs.contains(Self.premiumLifetimeProductID)
         if isPremium != wasPremium {
             log.notice("👑 Premium status changed: \(self.isPremium)")
         }

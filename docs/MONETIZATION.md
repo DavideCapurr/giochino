@@ -32,7 +32,18 @@ annoying). Standard, reliable fill for casual games.
 
 - `FullScreenAdCoordinator.registerGameOverAndMaybeShowInterstitial(...)`
 
-### 3. One-time "Remove Ads" purchase
+### 3. Lifetime Premium (best path for a small, technical audience)
+A one-time **non-consumable** unlock (`com.shiftblast.premium.lifetime`,
+suggested €9.99) that grants everything Premium does — the **AI agent alert**
+and no ads — with a single payment. Developers and friends-supporting-you
+convert far better on a lifetime unlock than on a recurring subscription, so for
+a small audience this is the most realistic route to the first €100 (≈ 10 buyers).
+
+- `SubscriptionStore.purchasePremiumLifetime()`; entitlement sets `isPremium`
+- Surfaced prominently on the paywall, which now **leads with the agent-alert
+  value** instead of "remove ads"
+
+### 4. One-time "Remove Ads" purchase
 A **non-consumable IAP** (`com.shiftblast.removeads`, suggested €3.99) sits next
 to the subscription on the paywall. Many players who would never subscribe will
 happily pay once to remove ads — this typically converts several times better
@@ -57,9 +68,11 @@ These steps need AdMob / App Store Connect access (account
    formats (policy-safe — test ads are never shipped). DEBUG builds always use
    Google's official test units, so you can verify the flows in the simulator.
 
-3. **Create the IAP in App Store Connect**: a **non-consumable** product with ID
-   `com.shiftblast.removeads`, priced ~€3.99, then submit it for review with the
-   build. (It's already in `ShiftBlast.storekit` for local StoreKit testing.)
+3. **Create the IAPs in App Store Connect** (both **non-consumable**), then
+   submit them for review with the build. They're already in
+   `ShiftBlast.storekit` for local StoreKit testing:
+   - `com.shiftblast.premium.lifetime` — Lifetime Premium, ~€9.99
+   - `com.shiftblast.removeads` — Remove Ads, ~€3.99
 
 ## Testing locally
 

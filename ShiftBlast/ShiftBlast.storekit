@@ -5,6 +5,21 @@
   ],
   "products" : [
     {
+      "displayPrice" : "9.99",
+      "familyShareable" : false,
+      "internalID" : "E9E092D8-1002",
+      "localizations" : [
+        {
+          "description" : "Unlock the AI agent alert and remove all ads, forever. One-time purchase, no subscription.",
+          "displayName" : "Lifetime Premium",
+          "locale" : "en_US"
+        }
+      ],
+      "productID" : "com.shiftblast.premium.lifetime",
+      "referenceName" : "Lifetime Premium",
+      "type" : "NonConsumable"
+    },
+    {
       "displayPrice" : "3.99",
       "familyShareable" : false,
       "internalID" : "E9E092D8-1001",
