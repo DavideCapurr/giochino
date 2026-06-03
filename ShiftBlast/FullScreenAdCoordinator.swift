@@ -32,11 +32,14 @@ final class FullScreenAdCoordinator: NSObject, ObservableObject {
 
     private var interstitial: InterstitialAd?
     private var rewarded: RewardedAd?
-    private var isLoadingInterstitial = false
-    private var isLoadingRewarded = false
+    // In-flight load tasks, so a concurrent caller (e.g. warmUp and a Continue tap on the
+    // same game over) awaits the same load instead of racing it and getting nothing.
+    private var interstitialLoadTask: Task<Void, Never>?
+    private var rewardedLoadTask: Task<Void, Never>?
 
     private var rewardContinuation: CheckedContinuation<Bool, Never>?
     private var didEarnReward = false
+    private var interstitialContinuation: CheckedContinuation<Void, Never>?
 
     /// Games finished since the last interstitial — used to pace interstitials so they
     /// don't appear on every single game over.
@@ -97,20 +100,31 @@ final class FullScreenAdCoordinator: NSObject, ObservableObject {
             await loadInterstitial()
             return
         }
-        gamesSinceInterstitial = 0
-        await showInterstitial()
+        // Only consume the pacing counter when an ad actually showed, so a failed or
+        // unconfigured load doesn't silently skip the next `frequency` games.
+        if await showInterstitial() {
+            gamesSinceInterstitial = 0
+        }
     }
 
-    private func showInterstitial() async {
-        guard interstitialUnitID != nil else { return }
-        guard let viewController = UIApplication.shared.adMobTopViewController() else { return }
-        guard await AdMobStartup.prepareForAdRequests(from: viewController) else { return }
+    /// Presents an interstitial and returns only after it is dismissed, so the caller can
+    /// sequence what comes next (e.g. restarting the game) behind the ad. Returns whether
+    /// an ad was actually presented.
+    private func showInterstitial() async -> Bool {
+        guard interstitialUnitID != nil else { return false }
+        guard let viewController = UIApplication.shared.adMobTopViewController() else { return false }
+        guard await AdMobStartup.prepareForAdRequests(from: viewController) else { return false }
 
         if interstitial == nil {
             await loadInterstitial()
         }
-        guard let ad = interstitial else { return }
-        ad.present(from: viewController)
+        guard let ad = interstitial else { return false }
+
+        await withCheckedContinuation { (continuation: CheckedContinuation<Void, Never>) in
+            self.interstitialContinuation = continuation
+            ad.present(from: viewController)
+        }
+        return true
     }
 
     // MARK: - Loading
@@ -124,34 +138,56 @@ final class FullScreenAdCoordinator: NSObject, ObservableObject {
     }
 
     private func loadInterstitial() async {
-        guard !isLoadingInterstitial, interstitial == nil, let unitID = interstitialUnitID else { return }
-        isLoadingInterstitial = true
-        defer { isLoadingInterstitial = false }
-        do {
-            let ad = try await InterstitialAd.load(with: unitID, request: Request())
-            ad.fullScreenContentDelegate = self
-            interstitial = ad
-        } catch {
-            log.error("Interstitial failed to load: \(error.localizedDescription, privacy: .public)")
+        // If a load is already in flight, await it instead of starting a second one.
+        if let task = interstitialLoadTask {
+            await task.value
+            return
         }
+        guard interstitial == nil, let unitID = interstitialUnitID else { return }
+        let task = Task { @MainActor in
+            do {
+                let ad = try await InterstitialAd.load(with: unitID, request: Request())
+                ad.fullScreenContentDelegate = self
+                interstitial = ad
+            } catch {
+                log.error("Interstitial failed to load: \(error.localizedDescription, privacy: .public)")
+            }
+        }
+        interstitialLoadTask = task
+        await task.value
+        interstitialLoadTask = nil
     }
 
     private func loadRewarded() async {
-        guard !isLoadingRewarded, rewarded == nil, let unitID = rewardedUnitID else { return }
-        isLoadingRewarded = true
-        defer { isLoadingRewarded = false }
-        do {
-            let ad = try await RewardedAd.load(with: unitID, request: Request())
-            ad.fullScreenContentDelegate = self
-            rewarded = ad
-        } catch {
-            log.error("Rewarded failed to load: \(error.localizedDescription, privacy: .public)")
+        // If a load is already in flight (e.g. from warmUp), await it instead of no-opping,
+        // so a Continue tap right after game over still gets the ad.
+        if let task = rewardedLoadTask {
+            await task.value
+            return
         }
+        guard rewarded == nil, let unitID = rewardedUnitID else { return }
+        let task = Task { @MainActor in
+            do {
+                let ad = try await RewardedAd.load(with: unitID, request: Request())
+                ad.fullScreenContentDelegate = self
+                rewarded = ad
+            } catch {
+                log.error("Rewarded failed to load: \(error.localizedDescription, privacy: .public)")
+            }
+        }
+        rewardedLoadTask = task
+        await task.value
+        rewardedLoadTask = nil
     }
 
     private func resumeReward(_ earned: Bool) {
         rewardContinuation?.resume(returning: earned)
         rewardContinuation = nil
+    }
+
+    private func resumeInterstitial() {
+        interstitialContinuation?.resume()
+        interstitialContinuation = nil
     }
 }
 
@@ -165,6 +201,7 @@ extension FullScreenAdCoordinator: FullScreenContentDelegate {
             Task { await loadRewarded() }
         } else if ad === interstitial {
             interstitial = nil
+            resumeInterstitial()
             Task { await loadInterstitial() }
         }
     }
@@ -177,6 +214,7 @@ extension FullScreenAdCoordinator: FullScreenContentDelegate {
             Task { await loadRewarded() }
         } else if ad === interstitial {
             interstitial = nil
+            resumeInterstitial()
             Task { await loadInterstitial() }
         }
     }

@@ -126,7 +126,11 @@ struct ContentView: View {
                 if !subscriptionStore.removesAds {
                     fullScreenAds.warmUp()
                 }
-                maybeRequestReview()
+                // A revive flips isGameOver false→true again, re-firing this handler for the
+                // same run; only count/prompt on the run's first game over.
+                if !viewModel.didUseReviveThisRun {
+                    maybeRequestReview()
+                }
             }
         }
     }
