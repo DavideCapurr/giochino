@@ -4,6 +4,7 @@ struct ContentView: View {
     @ObservedObject var viewModel: GameViewModel
     @EnvironmentObject var subscriptionStore: SubscriptionStore
     @EnvironmentObject var gameCenter: GameCenterService
+    @Environment(\.requestReview) private var requestReview
     @State private var isPaywallPresented = false
     @State private var isSettingsPresented = false
     @State private var isContinuing = false
@@ -119,11 +120,13 @@ struct ContentView: View {
                 PaywallView(subscriptionStore: subscriptionStore, dismiss: { isPaywallPresented = false })
             }
             .onChange(of: viewModel.state.isGameOver) { _, isGameOver in
+                guard isGameOver else { return }
                 // Pre-load the rewarded/interstitial ads the moment a run ends so the
                 // "Continue" tap is instant for free players.
-                if isGameOver && !subscriptionStore.removesAds {
+                if !subscriptionStore.removesAds {
                     fullScreenAds.warmUp()
                 }
+                maybeRequestReview()
             }
         }
     }
@@ -159,6 +162,28 @@ struct ContentView: View {
         // Pace an interstitial between games for free players, then start the next run.
         await fullScreenAds.registerGameOverAndMaybeShowInterstitial(removesAds: subscriptionStore.removesAds)
         viewModel.restart()
+    }
+
+    /// Asks for an App Store rating at a genuine high point — a new best score, after the
+    /// player has put in a few games — and at most once per app version. More ratings lift
+    /// App Store ranking, which is free user acquisition. (iOS also throttles this to a few
+    /// prompts per year.)
+    private func maybeRequestReview() {
+        let defaults = UserDefaults.standard
+        let gamesFinishedKey = "shiftblast.gamesFinished"
+        let reviewVersionKey = "shiftblast.reviewPromptVersion"
+
+        let gamesFinished = defaults.integer(forKey: gamesFinishedKey) + 1
+        defaults.set(gamesFinished, forKey: gamesFinishedKey)
+
+        let isNewBest = viewModel.state.score > 0 && viewModel.state.score >= viewModel.state.bestScore
+        guard isNewBest, gamesFinished >= 4 else { return }
+
+        let version = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "?"
+        guard defaults.string(forKey: reviewVersionKey) != version else { return }
+        defaults.set(version, forKey: reviewVersionKey)
+
+        requestReview()
     }
 
     private var swipeGesture: some Gesture {
@@ -1092,6 +1117,8 @@ private struct GameOverView: View {
     let restart: () -> Void
     @ObservedObject var gameCenter: GameCenterService
 
+    @State private var isSharePresented = false
+
     var body: some View {
         ZStack {
             Color.black.opacity(0.72)
@@ -1121,6 +1148,8 @@ private struct GameOverView: View {
                 if canContinue {
                     continueButton
                 }
+
+                shareButton
 
                 Button(action: restart) {
                     Image(systemName: "arrow.clockwise")
@@ -1175,6 +1204,31 @@ private struct GameOverView: View {
         }
         .disabled(isContinuing)
         .accessibilityLabel("Continue")
+    }
+
+    private var shareButton: some View {
+        Button {
+            isSharePresented = true
+        } label: {
+            HStack(spacing: 8) {
+                Image(systemName: "square.and.arrow.up")
+                    .font(.system(size: 14, weight: .black))
+                Text("SHARE SCORE")
+                    .font(.system(size: 13, weight: .black, design: .rounded))
+            }
+            .foregroundStyle(.white.opacity(0.85))
+            .frame(maxWidth: .infinity)
+            .padding(.vertical, 11)
+            .background(Color.white.opacity(0.08), in: RoundedRectangle(cornerRadius: 10, style: .continuous))
+            .overlay(
+                RoundedRectangle(cornerRadius: 10, style: .continuous)
+                    .stroke(Color.white.opacity(0.12), lineWidth: 1)
+            )
+        }
+        .accessibilityLabel("Share score")
+        .sheet(isPresented: $isSharePresented) {
+            ShareSheet(items: [AppPromo.shareMessage(score: score, bestScore: bestScore)])
+        }
     }
 }
 
