@@ -6,8 +6,11 @@ struct ContentView: View {
     @EnvironmentObject var gameCenter: GameCenterService
     @State private var isPaywallPresented = false
     @State private var isSettingsPresented = false
+    @State private var isContinuing = false
 
-    private var showAd: Bool { !subscriptionStore.isPremium }
+    private let fullScreenAds = FullScreenAdCoordinator.shared
+
+    private var showAd: Bool { !subscriptionStore.removesAds }
 
     var body: some View {
         GeometryReader { proxy in
@@ -87,7 +90,11 @@ struct ContentView: View {
                         bestScore: viewModel.state.bestScore,
                         moves: viewModel.state.moves,
                         leaderboard: viewModel.state.leaderboard,
-                        restart: viewModel.restart,
+                        canContinue: canOfferContinue,
+                        continueIsFree: subscriptionStore.removesAds,
+                        isContinuing: isContinuing,
+                        onContinue: { await handleContinue() },
+                        restart: { Task { await handleRestart() } },
                         gameCenter: gameCenter
                     )
                 }
@@ -111,7 +118,47 @@ struct ContentView: View {
             .fullScreenCover(isPresented: $isPaywallPresented) {
                 PaywallView(subscriptionStore: subscriptionStore, dismiss: { isPaywallPresented = false })
             }
+            .onChange(of: viewModel.state.isGameOver) { _, isGameOver in
+                // Pre-load the rewarded/interstitial ads the moment a run ends so the
+                // "Continue" tap is instant for free players.
+                if isGameOver && !subscriptionStore.removesAds {
+                    fullScreenAds.warmUp()
+                }
+            }
         }
+    }
+
+    /// A continue can be offered when the player still has their once-per-run revive and we
+    /// can actually deliver it — for free of charge to ad-removed players, or via a rewarded
+    /// ad when one is configured for this build.
+    private var canOfferContinue: Bool {
+        viewModel.canRevive && (subscriptionStore.removesAds || fullScreenAds.isRewardedConfigured)
+    }
+
+    @MainActor
+    private func handleContinue() async {
+        guard viewModel.canRevive, !isContinuing else { return }
+
+        // Players who removed ads get the continue as a free perk.
+        if subscriptionStore.removesAds {
+            viewModel.revive()
+            return
+        }
+
+        // Everyone else watches a rewarded ad — only revive if they earned the reward.
+        isContinuing = true
+        let earned = await fullScreenAds.showRewardedContinue()
+        isContinuing = false
+        if earned {
+            viewModel.revive()
+        }
+    }
+
+    @MainActor
+    private func handleRestart() async {
+        // Pace an interstitial between games for free players, then start the next run.
+        await fullScreenAds.registerGameOverAndMaybeShowInterstitial(removesAds: subscriptionStore.removesAds)
+        viewModel.restart()
     }
 
     private var swipeGesture: some Gesture {
@@ -1038,6 +1085,10 @@ private struct GameOverView: View {
     let bestScore: Int
     let moves: Int
     let leaderboard: [LeaderboardEntry]
+    let canContinue: Bool
+    let continueIsFree: Bool
+    let isContinuing: Bool
+    let onContinue: () async -> Void
     let restart: () -> Void
     @ObservedObject var gameCenter: GameCenterService
 
@@ -1067,6 +1118,10 @@ private struct GameOverView: View {
                 )
                 .task { await gameCenter.refreshAll() }
 
+                if canContinue {
+                    continueButton
+                }
+
                 Button(action: restart) {
                     Image(systemName: "arrow.clockwise")
                         .font(.system(size: 24, weight: .black))
@@ -1085,6 +1140,41 @@ private struct GameOverView: View {
             )
             .padding(.horizontal, 18)
         }
+    }
+
+    private var continueButton: some View {
+        Button {
+            Task { await onContinue() }
+        } label: {
+            HStack(spacing: 8) {
+                if isContinuing {
+                    ProgressView().tint(.black)
+                } else {
+                    Image(systemName: continueIsFree ? "play.fill" : "play.rectangle.fill")
+                        .font(.system(size: 16, weight: .black))
+                }
+                VStack(spacing: 1) {
+                    Text("CONTINUE")
+                        .font(.system(size: 15, weight: .black, design: .rounded))
+                    Text(continueIsFree ? "Clear space & keep your run" : "Watch an ad to keep your run")
+                        .font(.system(size: 10, weight: .bold, design: .rounded))
+                        .opacity(0.65)
+                }
+            }
+            .foregroundStyle(.black)
+            .frame(maxWidth: .infinity)
+            .padding(.vertical, 12)
+            .background(
+                LinearGradient(
+                    colors: [Color.shiftLime, Color.shiftCyan],
+                    startPoint: .leading,
+                    endPoint: .trailing
+                ),
+                in: RoundedRectangle(cornerRadius: 10, style: .continuous)
+            )
+        }
+        .disabled(isContinuing)
+        .accessibilityLabel("Continue")
     }
 }
 

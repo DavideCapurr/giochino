@@ -194,7 +194,7 @@ struct SettingsView: View {
                     icon: "crown.fill",
                     iconTint: Color.shiftYellow.opacity(0.5),
                     title: "PREMIUM",
-                    subtitle: "Remove ads · Unlock AI"
+                    subtitle: subscriptionStore.hasRemoveAds ? "Ads removed · Unlock AI" : "Remove ads · Unlock AI"
                 ) {
                     Button {
                         dismiss()

@@ -67,6 +67,39 @@ enum GameEngine {
         state.bestScore = max(state.bestScore, state.leaderboard.first?.score ?? state.score)
     }
 
+    /// Brings a finished run back to life: clears breathing room on the board, refills the
+    /// pulse and resets the volatile move state so the player can keep going. Used by the
+    /// "continue" flow (rewarded ad for free players, free perk for ad-removed players).
+    static func revive(in state: inout GameState, targetEmptyCells: Int = 30) {
+        guard state.isGameOver else { return }
+
+        state.isGameOver = false
+        state.activeMove = nil
+        state.clearingBlockIDs = []
+        state.highlightedLines = []
+        state.spawningBlockIDs = []
+        state.lastClear = nil
+        state.lastOverdrive = nil
+        state.lastPulseEvent = nil
+        state.chain = 0
+        state.surge = 0
+        state.pulse = maxPulse
+
+        let totalCells = state.boardSize * state.boardSize
+        let desiredEmpty = min(totalCells - 1, max(state.boardSize, targetEmptyCells))
+
+        // Clear the densest lines until the board has enough room to play again.
+        while emptyCells(in: state).count < desiredEmpty, !state.blocks.isEmpty {
+            guard let line = densestLine(in: state) else { break }
+            switch line {
+            case .row(let row):
+                state.blocks.removeAll { $0.position.row == row }
+            case .column(let column):
+                state.blocks.removeAll { $0.position.column == column }
+            }
+        }
+    }
+
     @discardableResult
     static func finishActiveMove(in state: inout GameState) -> MoveOutcome {
         state.activeMove = nil

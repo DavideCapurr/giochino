@@ -103,7 +103,7 @@ private final class BannerCoordinator: NSObject, BannerViewDelegate {
 }
 
 @MainActor
-private enum AdMobStartup {
+enum AdMobStartup {
     private static var didConfigureMobileAds = false
     private static var didStartMobileAds = false
 
@@ -152,7 +152,7 @@ private enum AdMobStartup {
     }
 }
 
-private extension UIApplication {
+extension UIApplication {
     func adMobTopViewController(
         base: UIViewController? = UIApplication.shared.connectedScenes
             .compactMap { $0 as? UIWindowScene }

@@ -34,6 +34,15 @@ final class GameViewModel: ObservableObject {
     @Published
     var recordNotice: RecordNotice?
 
+    /// True once the player has used their single "continue" for the current run.
+    @Published
+    var didUseReviveThisRun: Bool = false
+
+    /// Whether a "continue" can still be offered on the current game-over screen.
+    var canRevive: Bool {
+        state.isGameOver && !didUseReviveThisRun
+    }
+
     @Published var isAgentEnabled: Bool = false {
         didSet { updateAgentWatcher() }
     }
@@ -76,7 +85,20 @@ final class GameViewModel: ObservableObject {
         runStartingBestScore = state.bestScore
         announcedRecordMilestones = []
         recordNotice = nil
+        didUseReviveThisRun = false
         state = GameEngine.newGame(bestScore: state.bestScore, leaderboard: state.leaderboard)
+        store.save(state)
+    }
+
+    /// Revives a finished run, clearing space and refilling the pulse. Allowed once per run.
+    func revive() {
+        guard canRevive else { return }
+        completionTask?.cancel()
+        cleanupTask?.cancel()
+        spawnMarkerTask?.cancel()
+        isResolvingMove = false
+        didUseReviveThisRun = true
+        GameEngine.revive(in: &state)
         store.save(state)
     }
 

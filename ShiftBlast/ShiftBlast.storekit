@@ -4,7 +4,21 @@
 
   ],
   "products" : [
-
+    {
+      "displayPrice" : "3.99",
+      "familyShareable" : false,
+      "internalID" : "E9E092D8-1001",
+      "localizations" : [
+        {
+          "description" : "Remove all ads permanently. One-time purchase.",
+          "displayName" : "Remove Ads",
+          "locale" : "en_US"
+        }
+      ],
+      "productID" : "com.shiftblast.removeads",
+      "referenceName" : "Remove Ads",
+      "type" : "NonConsumable"
+    }
   ],
   "settings" : {
     "_failTransactionsEnabled" : false,
