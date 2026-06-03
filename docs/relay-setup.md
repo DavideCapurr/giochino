@@ -1,0 +1,79 @@
+# ShiftBlast Relay ⇆ iOS app
+
+How the macOS menu-bar **ShiftBlast Relay** talks to the **ShiftBlast** iOS game,
+and how to verify the link works end to end.
+
+## How it works
+
+```
+~/.codex/sessions/**.jsonl        iCloud Drive                 ShiftBlast (iOS)
+        │                       (Documents folder of            │
+   FSEvents + 1s poll            iCloud.com.davide.shiftblast)   │
+        │                              │                         │
+   SessionFileWatcher  ──writes──▶  agent-stop.flag  ──sync──▶  AgentSignalWatcher
+   (parses task_started /                                        (NSMetadataQuery +
+    task_complete events,                                         0.75s poll)
+    15s silence fallback)                                              │
+        │                                                        handleAgentReadySignal()
+   RelayCoordinator.signal() ──▶ SentinelWriter.touch()          → game pauses
+```
+
+1. The relay watches whichever agent transcript folder you authorize
+   (`~/.codex/sessions`, `~/.claude/projects`, `~/.aider`). It detects when the
+   agent **starts** and **finishes** a turn by parsing the session JSONL, with a
+   15-second silence window as a fallback.
+2. On each turn end it touches a single sentinel file, `agent-stop.flag`, in the
+   app's shared iCloud Documents container.
+3. iCloud Drive syncs that file to the phone.
+4. The iOS app watches the sentinel's content-change date and pauses the game so
+   you notice your agent is waiting for you.
+
+The producer (`SentinelWriter`) and consumer (`AgentSignalWatcher` /
+`AgentBridgeICloud`) agree on two constants only:
+
+| Constant            | Value                          |
+| ------------------- | ------------------------------ |
+| iCloud container    | `iCloud.com.davide.shiftblast` |
+| Sentinel file name  | `agent-stop.flag`              |
+
+These are asserted by `AgentBridgeTests`.
+
+## Why the watcher ignores wall-clock time
+
+The sentinel is written by a *different machine* than the one reading it, so its
+modification / content-change date is on the Mac's clock, not the phone's. An
+earlier version dropped any change whose date was `<= appLaunchTime`; if the Mac
+clock trailed the phone's by a few seconds, **every** real signal looked stale
+and the relay appeared dead.
+
+`SentinelChangeTracker` fixes this: it never compares to wall time. The first
+observation from each source (metadata query + polling) is only a baseline, and
+afterwards any unseen, newer change date fires exactly once. `AgentBridgeTests`
+covers the clock-skew, file-appears-after-launch, dedupe and out-of-order cases.
+
+## Verifying end to end
+
+Requirements that can only be checked on real hardware:
+
+1. **Same iCloud account** signed in on the Mac and the iPhone, with **iCloud
+   Drive enabled** on both.
+2. The iCloud container `iCloud.com.davide.shiftblast` must be provisioned for
+   both the app and the relay bundle IDs in the Apple Developer portal (it is in
+   both targets' entitlements).
+3. In the iOS app, the AI agent bridge is **Premium-gated** — Settings shows
+   `iCloud bridge connected` (lime) when the container is reachable. The
+   `GameViewModel` only starts `AgentSignalWatcher` while `isAgentEnabled`
+   (i.e. premium) is true.
+4. In the relay menu, authorize `~/.codex/sessions` (or your agent's folder).
+   The status line should read `monitor attivo su N cartelle`.
+
+Smoke test:
+
+1. Launch the relay, authorize the Codex sessions folder.
+2. Open the iOS app (premium build) and start a game.
+3. Run a Codex turn on the Mac. When it finishes, the relay logs
+   `📡 SENTINELLA scritta`; within a few seconds the phone logs
+   `📡 sentinella rilevata` and the game pauses.
+
+Console filters: subsystem `com.davide.shiftblast.relay` (Mac) and
+`com.davide.shiftblast` (iOS).

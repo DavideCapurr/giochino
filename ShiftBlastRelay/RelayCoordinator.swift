@@ -4,8 +4,10 @@ import OSLog
 
 private let log = Logger(subsystem: "com.davide.shiftblast.relay", category: "Coordinator")
 
-/// Wires together the two detection layers (process exit + session-file
-/// silence) and centralises state for the menubar UI.
+/// Drives session-file detection (turn start/finish parsed from the agent's
+/// transcript, with a silence-window fallback) and centralises state for the
+/// menubar UI. On each detected turn end it writes the iCloud sentinel the iOS
+/// app watches.
 @MainActor
 final class RelayCoordinator: ObservableObject {
     @Published private(set) var lastSignal: Date?
