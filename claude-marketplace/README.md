@@ -1,15 +1,23 @@
 # ShiftBlast Claude Code Plugin
 
-This local marketplace installs `shiftblast-alert`, a Claude Code plugin that notifies ShiftBlast when Claude Code finishes a response.
+`shiftblast-alert` notifies the ShiftBlast iPhone game the moment Claude Code
+finishes a response, so you stop procrastinating and get back to work.
 
-Install from Claude Code:
+## Install (public — anyone can run this)
+
+```text
+/plugin marketplace add davidecapurr/giochino
+/plugin install shiftblast-alert@shiftblast
+```
+
+Restart Claude Code after installing.
+
+## Install (local checkout)
 
 ```text
 /plugin marketplace add ./claude-marketplace
 /plugin install shiftblast-alert@shiftblast-local
 ```
-
-Restart Claude Code after installing.
 
 Test:
 

@@ -1,67 +1,75 @@
-# Shift Blast — Growth (getting users for free)
+# ShiftBlast — Growth (getting users)
 
-Revenue = **users × revenue per user**. The monetization work (see
-`MONETIZATION.md`) raised revenue per user. But with very few users and no
-marketing spend, that isn't enough on its own — this is the plan to grow users
-**without a budget**.
+**The bottleneck is users, not revenue-per-user.** With a handful of users —
+mostly acquaintances — ad income will always be a few cents, because ads only
+pay at thousands-of-users scale. So this is a user-acquisition plan, and it's
+built around what the app *actually is*.
 
-## Built into the app (this branch)
+## Know your real audience
 
-These are organic, zero-cost acquisition loops added in code:
+ShiftBlast looks like a casual block puzzle, but its one differentiated,
+pay-worthy feature is the **Claude Code agent alert**: it pings you the moment
+your AI agent finishes. That means the audience is **developers who use Claude
+Code**, not generic mobile-game players.
 
-### 1. Share your score (word of mouth)
-Every game-over screen now has a **Share Score** button. It opens the system
-share sheet with a brag message + a link to the game:
+This single fact rewrites the growth plan: **do not chase casual-game App Store
+keywords.** Go where Claude Code users already are, and let the plugin do the
+acquiring.
 
-> "I just set my best score of 12,340 in Shift Blast! 🏆
-> Think you can beat me? <link>"
+## The plugin is the funnel (highest-leverage lever)
 
-Word of mouth is the #1 organic install driver for casual games. Each shared
-score is a free ad sent by a player to friends who are likely to play too.
+Every developer who installs the `shiftblast-alert` plugin is a *qualified*
+lead: they have the exact pain point and they've already opted in. Make that
+path frictionless and discoverable:
 
-- `AppPromo.shareMessage(...)`, `ShareSheet`, wired into `GameOverView`.
+1. **One-command public install** (done in this repo): anyone can run
+   ```text
+   /plugin marketplace add davidecapurr/giochino
+   /plugin install shiftblast-alert@shiftblast
+   ```
+   because there's now a `.claude-plugin/marketplace.json` at the repo root.
+2. **Get listed where developers look for plugins:**
+   - Open a PR to the **`hesreallyhim/awesome-claude-code`** list (and similar
+     "awesome-claude-code" / plugin-directory repos).
+   - Submit to any community Claude Code plugin directories.
+3. **Make the GitHub repo convert:** the README now leads with the hook and the
+   install command, so repo visitors become users.
 
-### 2. Smart review prompt (App Store ranking)
-After a player sets a **new best score** (a genuine high point) and has played a
-few games, the app asks for a rating once per version. More & better ratings
-directly lift App Store search/category ranking → more **free** installs.
+## Where to post (pick 1–2, do them weekly)
 
-- `ContentView.maybeRequestReview()` using `@Environment(\.requestReview)`.
+These reach Claude Code / AI-dev users directly — far better fit than casual
+gaming channels:
 
-### ⚠️ One-line config to make both stronger
-Once the app is live, set the numeric App Store ID in
-`AppPromo.appStoreID`. Shares and the review prompt will then deep-link
-straight into the App Store instead of the landing page.
+- **r/ClaudeAI** and **r/ClaudeCode** — a short clip + honest "I built this"
+  post. (Read each sub's self-promo rules.)
+- **Anthropic / Claude Developers Discord** — #show-and-tell / #plugins.
+- **X/Twitter** — the AI-coding crowd. A 15-second screen recording: agent
+  finishes → phone game pauses → "back to work." That demo *is* the pitch.
+- **Show HN** — "Show HN: A puzzle game that pings you when Claude Code is done."
+- **Dev newsletters / link roundups** (TLDR, Console.dev, etc.) — submit it.
 
-## Off-code, still free (do these — they move the needle most)
+The demo video is the single best asset: it explains the product in one loop.
+Record it once, reuse it everywhere above.
 
-### App Store Optimization (ASO) — biggest free traffic source
-Edit in App Store Connect (no code, ~1 hour, re-do every few weeks):
-- **Title (30 chars):** include the genre, e.g. `Shift Blast: Block Puzzle`.
-- **Subtitle (30 chars):** keyword-rich benefit, e.g. `Slide, merge & clear lines`.
-- **Keywords (100 chars):** comma-separated, no spaces, no repeats of the title.
-  e.g. `block,puzzle,slide,2048,merge,brain,blast,tiles,relax,offline,number,grid`.
-- **Screenshots:** the first 2 are what convert. Show the board mid-combo + the
-  score/leaderboard. Add a 3-word caption per shot.
-- **Localize** title/keywords for it/es/de/fr/pt — each locale is a separate
-  search index and most indie devs skip this.
+## Monetize the audience you have (since it's small)
 
-### Free distribution channels (pick 1–2, do them weekly)
-- **Short-form video:** screen-record satisfying combos/overdrives → post to
-  TikTok / Instagram Reels / YouTube Shorts with the App Store link in bio.
-  Satisfying puzzle clips travel far at zero cost.
-- **Reddit:** r/iosgaming, r/incremental_games, r/puzzlevideogames — share a
-  clip + honest "I made this" post. Read each sub's self-promo rules first.
-- **Product Hunt / Hacker News "Show HN":** one-time launch spike + backlinks.
-- **TestFlight + indie game Discords:** early players, feedback, first ratings.
+With a small, technical audience, the money is in **direct purchases**, not ads:
+- Developers convert better on a **one-time purchase** than a subscription, and
+  friends who want to support you prefer paying once. Consider a one-time
+  "lifetime Premium" alongside the monthly. (~10 buyers × €9.99 ≈ €100.)
+- Keep ads on for free players (free upside), but treat **Premium** — the agent
+  alert — as the real product, and sell *that* on the paywall and landing page.
 
-### Retention = cheaper growth
-Players who come back are more likely to share and to convert. The friend
-leaderboards, record toasts, and the new "Continue" all push session length and
-return rate. Watch crash-free rate and day-1 retention in App Store Connect.
+## Secondary: App Store presence
+
+Still worth doing, but secondary for this audience:
+- Title/subtitle should mention the hook (e.g. "AI agent alerts"), not just
+  "block puzzle," so the few people who search find the actual differentiator.
+- First two screenshots: show the **"Agent ready — back to work"** pause. That's
+  what makes a developer stop scrolling.
 
 ## Honest expectations
-- The in-app loops above only compound once there's a base of players to share
-  and rate — so the off-code ASO + a steady posting habit are what break the
-  cold-start. Budget ~2–3 hours/week of posting; it's the highest-ROI unpaid
-  work available for a solo dev.
+
+The plugin funnel + a reusable demo clip + a couple of community posts is the
+realistic path from "friends only" to a real user base. Budget ~2–3 hours/week
+of posting; for a solo dev it's the highest-ROI unpaid work available.
