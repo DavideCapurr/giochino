@@ -14,6 +14,10 @@ struct ShiftBlastApp: App {
                 .environmentObject(gameCenter)
                 .task {
                     await subscriptionStore.configure()
+                    // Sync explicitly after entitlements resolve: onChange only
+                    // fires on a transition, so this guarantees the agent watcher
+                    // starts for a user who is already premium at launch.
+                    viewModel.isAgentEnabled = subscriptionStore.isPremium
                     gameCenter.authenticate()
                     viewModel.bindGameCenter(gameCenter)
                 }
