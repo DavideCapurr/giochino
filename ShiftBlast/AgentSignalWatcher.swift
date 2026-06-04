@@ -100,7 +100,15 @@ final class AgentSignalWatcher {
             self?.pollSentinel()
         }
 
-        guard Self.isAvailable else { return }
+        startMetadataQueryIfPossible()
+    }
+
+    /// Starts the ubiquitous metadata query once iCloud is reachable. Safe to
+    /// call repeatedly: it no-ops once a query is running. The polling loop
+    /// retries it, so a cold launch where iCloud isn't yet provisioned still
+    /// gets the push-style query as soon as the container appears.
+    private func startMetadataQueryIfPossible() {
+        guard query == nil, Self.isAvailable else { return }
 
         let q = NSMetadataQuery()
         q.searchScopes = [NSMetadataQueryUbiquitousDocumentsScope]
@@ -121,6 +129,7 @@ final class AgentSignalWatcher {
 
         query = q
         q.start()
+        log.notice("🔎 NSMetadataQuery avviata su container iCloud")
     }
 
     func stop() {
@@ -148,6 +157,9 @@ final class AgentSignalWatcher {
     }
 
     private func pollSentinel() {
+        // Retry the push-style query if iCloud only became reachable after launch.
+        startMetadataQueryIfPossible()
+
         guard let url = Self.sentinelURL() else { return }
         try? FileManager.default.startDownloadingUbiquitousItem(at: url)
         let attrs = try? FileManager.default.attributesOfItem(atPath: url.path)
