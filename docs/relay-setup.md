@@ -67,9 +67,27 @@ Requirements that can only be checked on real hardware:
 4. In the relay menu, authorize `~/.codex/sessions` (or your agent's folder).
    The status line should read `monitor attivo su N cartelle`.
 
-Smoke test:
+### Two ways to verify without running an agent
 
-1. Launch the relay, authorize the Codex sessions folder.
+Detection (parsing the agent transcript) and transport (iCloud → iOS) are
+independent. Test transport in isolation first — if it works, any remaining
+issue is detection-only.
+
+- **From the relay menu:** click **Invia segnale di test**. It writes a sentinel
+  immediately, bypassing the throttle. The menu shows a green/orange dot:
+  `iCloud collegato` means the real ubiquity container is reachable;
+  `iCloud non pronto` means the write can't sync (sign in / enable iCloud Drive).
+- **Without the relay at all:** run `scripts/send-test-sentinel.sh` on the Mac.
+  It writes the same payload straight into the shared iCloud container, so you
+  can confirm the iOS side reacts even if the relay isn't installed.
+
+With the iOS app (premium build) open in the foreground, either method should
+pause the game within a few seconds and log `📡 sentinella rilevata`.
+
+### Full smoke test
+
+1. Launch the relay, authorize the Codex sessions folder. Confirm the menu shows
+   `iCloud collegato`.
 2. Open the iOS app (premium build) and start a game.
 3. Run a Codex turn on the Mac. When it finishes, the relay logs
    `📡 SENTINELLA scritta`; within a few seconds the phone logs

@@ -30,7 +30,15 @@ struct RelayMenuView: View {
     }
 
     private var statusSection: some View {
-        VStack(alignment: .leading, spacing: 4) {
+        VStack(alignment: .leading, spacing: 6) {
+            HStack(spacing: 6) {
+                Circle()
+                    .fill(coordinator.iCloudReady ? Color.green : Color.orange)
+                    .frame(width: 8, height: 8)
+                Text(coordinator.iCloudReady ? "iCloud collegato" : "iCloud non pronto")
+                    .font(.system(size: 11, weight: .semibold))
+                    .foregroundStyle(.secondary)
+            }
             Text(coordinator.sentinelStatus)
                 .font(.system(size: 12, weight: .medium))
                 .foregroundStyle(.primary)
@@ -39,6 +47,12 @@ struct RelayMenuView: View {
                     .font(.system(size: 11))
                     .foregroundStyle(.secondary)
             }
+            Button("Invia segnale di test") {
+                coordinator.sendTestSignal()
+            }
+            .buttonStyle(.borderless)
+            .font(.system(size: 11, weight: .semibold))
+            .padding(.top, 2)
         }
     }
 
