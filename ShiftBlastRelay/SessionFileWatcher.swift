@@ -31,6 +31,13 @@ final class SessionFileWatcher {
     private var pendingLines: [String: String] = [:]
     private let queue = DispatchQueue(label: "shiftblast.relay.fsevents")
 
+    /// Hard caps that bound memory when parsing untrusted session files. A
+    /// corrupt or maliciously-inflated transcript can't exhaust memory: oversized
+    /// appends and unterminated lines are skipped (treated as plain activity, so
+    /// the silence fallback still detects the turn end).
+    private let maxAppendChunkBytes: UInt64 = 8 * 1024 * 1024   // 8 MB per read
+    private let maxPendingLineBytes = 1 * 1024 * 1024           // 1 MB partial line
+
     init(
         silenceWindow: TimeInterval = 15.0,
         onTurnStarted: @escaping @MainActor (URL) -> Void,
@@ -223,6 +230,15 @@ final class SessionFileWatcher {
                 return ParsedSessionAppend()
             }
 
+            // Bound the single-pass read: an inflated/corrupt file can't make us
+            // load an unbounded blob into memory. Fast-forward and let the
+            // silence fallback handle the turn end.
+            if currentOffset - previousOffset > maxAppendChunkBytes {
+                fileOffsets[url.path] = currentOffset
+                pendingLines[url.path] = nil
+                return ParsedSessionAppend(sawActivity: true, didFinish: false)
+            }
+
             try handle.seek(toOffset: previousOffset)
             let data = try handle.readToEnd() ?? Data()
             fileOffsets[url.path] = currentOffset
@@ -232,7 +248,14 @@ final class SessionFileWatcher {
             if chunk.hasSuffix("\n") {
                 pendingLines[url.path] = nil
             } else {
-                pendingLines[url.path] = lines.popLast()
+                let tail = lines.popLast()
+                // Drop an unterminated line that grows past the cap so a file
+                // with no newlines can't inflate the pending buffer unbounded.
+                if let tail, tail.utf8.count <= maxPendingLineBytes {
+                    pendingLines[url.path] = tail
+                } else {
+                    pendingLines[url.path] = nil
+                }
             }
 
             var parsed = ParsedSessionAppend()
