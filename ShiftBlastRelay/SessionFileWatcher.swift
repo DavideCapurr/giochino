@@ -23,6 +23,7 @@ final class SessionFileWatcher {
     private var lastObservedWrite: FileWriteSnapshot?
     private var lastFinishedAt: Date?
     private var lastFinishedURL: URL?
+    private var lastFinishWasEvent = false
     private var isTurnActive = false
     private var activeTurnID: String?
     private var completedTurnIDs: Set<String> = []
@@ -114,6 +115,7 @@ final class SessionFileWatcher {
         lastObservedWrite = nil
         lastFinishedAt = nil
         lastFinishedURL = nil
+        lastFinishWasEvent = false
         isTurnActive = false
         activeTurnID = nil
         completedTurnIDs = []
@@ -339,8 +341,10 @@ final class SessionFileWatcher {
             log.debug("✏️ scrittura rilevata: \(firstPath, privacy: .public)")
         }
         let url = lastTriggerURL ?? resolved.first?.url
-        if !isTurnActive, let url {
-            if isIgnoringLateWrite(for: url) { return }
+        // Mark a turn as started unless these are trailing writes flushed right
+        // after an event-based finish. We still (re)arm the silence timer below,
+        // so a genuinely new turn is detected even within that window.
+        if !isTurnActive, let url, !isIgnoringLateWrite(for: url) {
             isTurnActive = true
             log.notice("▶️ risposta agente rilevata in \(url.lastPathComponent, privacy: .public)")
             onTurnStarted(url)
@@ -363,8 +367,13 @@ final class SessionFileWatcher {
         onTurnStarted(url)
     }
 
+    /// True only while we're inside the window that swallows trailing writes
+    /// flushed right after an **event-based** finish (e.g. Codex emitting
+    /// `token_count` after `task_complete`). A silence-based finish leaves no
+    /// trailing writes, so we never suppress after one — that's what lets
+    /// back-to-back turns of silence-only agents still be detected.
     private func isIgnoringLateWrite(for url: URL) -> Bool {
-        guard let lastFinishedAt, let lastFinishedURL else { return false }
+        guard lastFinishWasEvent, let lastFinishedAt, let lastFinishedURL else { return false }
         let isSameRoot = url.path == lastFinishedURL.path
         return isSameRoot && Date().timeIntervalSince(lastFinishedAt) < 20
     }
@@ -380,6 +389,7 @@ final class SessionFileWatcher {
         lastTriggerURL = url
         lastFinishedAt = Date()
         lastFinishedURL = url
+        lastFinishWasEvent = true
         log.notice("✅ evento Codex \(reason, privacy: .public) in \(fileURL.lastPathComponent, privacy: .public) → fine risposta")
         onTurnFinished(url)
     }
@@ -387,10 +397,17 @@ final class SessionFileWatcher {
     private func fireSilence() {
         let url = lastTriggerURL ?? resolved.first?.url
         guard let url else { return }
+        // Silence following trailing writes after an event-based finish is not a
+        // new turn — drop it instead of emitting a duplicate signal.
+        if isIgnoringLateWrite(for: url) {
+            isTurnActive = false
+            return
+        }
         isTurnActive = false
         activeTurnID = nil
         lastFinishedAt = Date()
         lastFinishedURL = url
+        lastFinishWasEvent = false
         log.notice("🤫 silenzio di \(self.silenceWindow, privacy: .public)s in \(url.lastPathComponent, privacy: .public) → fine risposta")
         onTurnFinished(url)
     }
