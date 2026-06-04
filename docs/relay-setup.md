@@ -38,6 +38,11 @@ The producer (`SentinelWriter`) and consumer (`AgentSignalWatcher` /
 
 These are asserted by `AgentBridgeTests`.
 
+The two correctness-critical algorithms — the iOS sentinel tracker and the relay
+turn state machine — also have a hardware-free, reproducible guardrail:
+`python3 scripts/verify-relay-logic.py` (faithful 1:1 ports, 14 cases). Run it in
+CI or after editing the Swift logic.
+
 ## Why the watcher ignores wall-clock time
 
 The sentinel is written by a *different machine* than the one reading it, so its
