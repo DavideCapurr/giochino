@@ -80,6 +80,9 @@ issue is detection-only.
 - **Without the relay at all:** run `scripts/send-test-sentinel.sh` on the Mac.
   It writes the same payload straight into the shared iCloud container, so you
   can confirm the iOS side reacts even if the relay isn't installed.
+- **If the link fails:** run `scripts/diagnose-relay.sh` (add `--probe` to also
+  write-test the container). It checks iCloud Drive, the shared container, the
+  sentinel, and the relay process, and pinpoints the first blocking problem.
 
 With the iOS app (premium build) open in the foreground, either method should
 pause the game within a few seconds and log `📡 sentinella rilevata`.
