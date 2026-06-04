@@ -57,16 +57,13 @@ than a monthly sub. Buyers also get the "Continue" perk for free.
 These steps need AdMob / App Store Connect access (account
 `ca-app-pub-2326857958249865`) and cannot be done from code:
 
-1. **Create the ad units in AdMob** (same publisher account as the banner):
-   - one **Rewarded** unit
-   - one **Interstitial** unit
-2. **Paste the unit IDs** into `FullScreenAdCoordinator.AdUnits`:
-   - `productionRewarded`
-   - `productionInterstitial`
-
-   Until these are filled in, release builds simply **skip** the full-screen
-   formats (policy-safe — test ads are never shipped). DEBUG builds always use
-   Google's official test units, so you can verify the flows in the simulator.
+1. ~~**Create the ad units in AdMob**~~ ✅ Done — Rewarded
+   (`/4465360787`) and Interstitial (`/8101353464`) units created on the
+   banner's publisher account.
+2. ~~**Paste the unit IDs** into `FullScreenAdCoordinator.AdUnits`~~ ✅ Done —
+   `productionRewarded` and `productionInterstitial` are now filled in, so
+   release builds serve real full-screen ads. DEBUG builds still use Google's
+   official test units so the flows can be verified in the simulator.
 
 3. **Create the IAPs in App Store Connect** (both **non-consumable**), then
    submit them for review with the build. They're already in

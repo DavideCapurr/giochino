@@ -22,12 +22,11 @@ final class FullScreenAdCoordinator: NSObject, ObservableObject {
         static let testInterstitial = "ca-app-pub-3940256099942544/4411468910"
         static let testRewarded = "ca-app-pub-3940256099942544/1712485313"
 
-        // TODO: Create an Interstitial and a Rewarded ad unit in the AdMob console
-        // (publisher account ca-app-pub-2326857958249865, the same one that owns the
-        // banner unit) and paste their IDs here. Leaving them empty disables the format
-        // in release builds instead of serving test ads.
-        static let productionInterstitial = ""
-        static let productionRewarded = ""
+        // Production units (publisher account ca-app-pub-2326857958249865, the same one
+        // that owns the banner unit). Leaving one empty disables that format in release
+        // builds instead of serving test ads.
+        static let productionInterstitial = "ca-app-pub-2326857958249865/8101353464"
+        static let productionRewarded = "ca-app-pub-2326857958249865/4465360787"
     }
 
     private var interstitial: InterstitialAd?
