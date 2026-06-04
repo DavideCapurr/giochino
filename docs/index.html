@@ -3,16 +3,69 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>ShiftBlast</title>
+<title>ShiftBlast — the puzzle game that pings you when your AI agent is done</title>
+<meta name="description" content="Play while Claude Code works. ShiftBlast pauses and taps you on the shoulder the moment your AI agent finishes, so you stop procrastinating and get back to work.">
 <style>
-  body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; max-width: 640px; margin: 4rem auto; padding: 0 1rem; line-height: 1.55; }
-  a { color: #0a66c2; display: block; margin: .5rem 0; }
+  :root { color-scheme: dark; }
+  * { box-sizing: border-box; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    max-width: 680px; margin: 0 auto; padding: 3.5rem 1.25rem 4rem;
+    line-height: 1.6; color: #e8e8f0; background: #09090d;
+  }
+  h1 { font-size: 2.2rem; line-height: 1.15; margin: 0 0 .5rem; }
+  .tag { color: #7cf; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; font-size: .8rem; }
+  .lead { font-size: 1.2rem; color: #c8c8d8; margin: .25rem 0 1.75rem; }
+  .flow {
+    background: #121219; border: 1px solid #23232e; border-radius: 12px;
+    padding: 1rem 1.1rem; margin: 1.5rem 0; font-size: .95rem; color: #b8b8c8;
+  }
+  .flow b { color: #9fe; }
+  h2 { font-size: 1.15rem; margin: 2rem 0 .5rem; }
+  code {
+    background: #16161f; padding: .15rem .4rem;
+    border-radius: 6px; font-size: .9em; color: #9fe;
+  }
+  pre {
+    background: #121219; border: 1px solid #23232e; border-radius: 10px;
+    padding: 1rem; overflow-x: auto; font-size: .88rem; color: #cfe;
+  }
+  a { color: #6cf; }
+  .legal { margin-top: 2.5rem; font-size: .9rem; }
+  .legal a { display: inline-block; margin-right: 1rem; }
+  footer { margin-top: 2rem; color: #66667a; font-size: .85rem; }
 </style>
 </head>
 <body>
-<h1>ShiftBlast</h1>
-<p>iOS puzzle game.</p>
-<a href="privacy.html">Privacy Policy</a>
-<a href="terms.html">Terms of Use</a>
+  <p class="tag">For Claude Code users</p>
+  <h1>The puzzle you procrastinate in — that pings you the second your agent is done.</h1>
+  <p class="lead">
+    Kick off a long Claude Code task, then play ShiftBlast. The moment the agent
+    finishes, the game pauses and taps you on the shoulder so you get back to
+    work instead of babysitting a terminal.
+  </p>
+
+  <div class="flow">
+    <b>Claude Code finishes</b> → plugin hook → iCloud signal →
+    <b>game pauses on your iPhone</b> → you're back in flow.
+  </div>
+
+  <h2>1. Install the Claude Code plugin</h2>
+  <pre>/plugin marketplace add davidecapurr/giochino
+/plugin install shiftblast-alert@shiftblast</pre>
+  <p>Restart Claude Code, then run <code>/shiftblast-test</code> to verify the link.</p>
+
+  <h2>2. Get the iPhone app &amp; pair it</h2>
+  <p>
+    The free game is a fast block-slide puzzle with Game Center leaderboards and
+    combos. <b>Premium</b> unlocks the AI-agent alert and removes ads.
+  </p>
+
+  <p class="legal">
+    <a href="privacy.html">Privacy Policy</a>
+    <a href="terms.html">Terms of Use</a>
+  </p>
+
+  <footer>ShiftBlast — play while your agent works.</footer>
 </body>
 </html>

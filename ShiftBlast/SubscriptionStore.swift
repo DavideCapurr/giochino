@@ -7,6 +7,13 @@ private let log = Logger(subsystem: "com.davide.shiftblast", category: "Subscrip
 @MainActor
 final class SubscriptionStore: ObservableObject {
     nonisolated static let premiumMonthlyProductID = "com.shiftblast.premium.monthly"
+    /// One-time, non-consumable purchase that unlocks everything Premium does (AI agent
+    /// alert + no ads) with a single payment. Developers and supporters convert far better
+    /// on a lifetime unlock than on a recurring subscription.
+    nonisolated static let premiumLifetimeProductID = "com.shiftblast.premium.lifetime"
+    /// One-time, non-consumable purchase that just removes ads. Converts far better than the
+    /// monthly subscription for players who only want an ad-free game.
+    nonisolated static let removeAdsProductID = "com.shiftblast.removeads"
 
     enum PurchaseState: Equatable {
         case idle
@@ -18,21 +25,46 @@ final class SubscriptionStore: ObservableObject {
 
     @Published private(set) var products: [Product] = []
     @Published private(set) var isPremium = false
+    @Published private(set) var hasRemoveAds = false
     @Published private(set) var state: PurchaseState = .idle
     @Published private(set) var didFinishLoadingProducts = false
 
+    /// Whether ads should be hidden — true for premium subscribers and for one-time
+    /// "Remove Ads" buyers.
+    var removesAds: Bool { isPremium || hasRemoveAds }
+
     var premiumProduct: Product? {
         products.first { $0.id == Self.premiumMonthlyProductID }
+    }
+
+    var premiumLifetimeProduct: Product? {
+        products.first { $0.id == Self.premiumLifetimeProductID }
+    }
+
+    var removeAdsProduct: Product? {
+        products.first { $0.id == Self.removeAdsProductID }
     }
 
     var premiumDisplayPrice: String {
         premiumProduct?.displayPrice ?? "$2.99"
     }
 
+    var premiumLifetimeDisplayPrice: String {
+        premiumLifetimeProduct?.displayPrice ?? "$9.99"
+    }
+
+    var removeAdsDisplayPrice: String {
+        removeAdsProduct?.displayPrice ?? "$3.99"
+    }
+
     private var updatesTask: Task<Void, Never>?
     private let productIDs: [String]
 
-    init(productIDs: [String] = [SubscriptionStore.premiumMonthlyProductID]) {
+    init(productIDs: [String] = [
+        SubscriptionStore.premiumMonthlyProductID,
+        SubscriptionStore.premiumLifetimeProductID,
+        SubscriptionStore.removeAdsProductID
+    ]) {
         self.productIDs = productIDs
     }
 
@@ -52,10 +84,29 @@ final class SubscriptionStore: ObservableObject {
             state = .failed("Premium subscription is not available yet.")
             return
         }
+        await purchase(premiumProduct)
+    }
 
+    func purchasePremiumLifetime() async {
+        guard let premiumLifetimeProduct else {
+            state = .failed("Lifetime Premium is not available yet.")
+            return
+        }
+        await purchase(premiumLifetimeProduct)
+    }
+
+    func purchaseRemoveAds() async {
+        guard let removeAdsProduct else {
+            state = .failed("Remove Ads is not available yet.")
+            return
+        }
+        await purchase(removeAdsProduct)
+    }
+
+    private func purchase(_ product: Product) async {
         state = .purchasing
         do {
-            let result = try await premiumProduct.purchase()
+            let result = try await product.purchase()
             switch result {
             case .success(let verificationResult):
                 guard let transaction = verifiedTransaction(from: verificationResult) else {
@@ -135,8 +186,15 @@ final class SubscriptionStore: ObservableObject {
 
         let wasPremium = isPremium
         isPremium = entitledProductIDs.contains(Self.premiumMonthlyProductID)
+            || entitledProductIDs.contains(Self.premiumLifetimeProductID)
         if isPremium != wasPremium {
             log.notice("👑 Premium status changed: \(self.isPremium)")
+        }
+
+        let hadRemoveAds = hasRemoveAds
+        hasRemoveAds = entitledProductIDs.contains(Self.removeAdsProductID)
+        if hasRemoveAds != hadRemoveAds {
+            log.notice("🚫 Remove Ads status changed: \(self.hasRemoveAds)")
         }
     }
 

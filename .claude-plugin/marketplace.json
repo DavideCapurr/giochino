@@ -1,0 +1,13 @@
+{
+  "name": "shiftblast",
+  "owner": {
+    "name": "ShiftBlast"
+  },
+  "plugins": [
+    {
+      "name": "shiftblast-alert",
+      "source": "./claude-marketplace/shiftblast-alert",
+      "description": "Pings the ShiftBlast iPhone game the moment Claude Code finishes, so you stop procrastinating and get back to work."
+    }
+  ]
+}

@@ -4,10 +4,14 @@ struct ContentView: View {
     @ObservedObject var viewModel: GameViewModel
     @EnvironmentObject var subscriptionStore: SubscriptionStore
     @EnvironmentObject var gameCenter: GameCenterService
+    @Environment(\.requestReview) private var requestReview
     @State private var isPaywallPresented = false
     @State private var isSettingsPresented = false
+    @State private var isContinuing = false
 
-    private var showAd: Bool { !subscriptionStore.isPremium }
+    private let fullScreenAds = FullScreenAdCoordinator.shared
+
+    private var showAd: Bool { !subscriptionStore.removesAds }
 
     var body: some View {
         GeometryReader { proxy in
@@ -87,7 +91,11 @@ struct ContentView: View {
                         bestScore: viewModel.state.bestScore,
                         moves: viewModel.state.moves,
                         leaderboard: viewModel.state.leaderboard,
-                        restart: viewModel.restart,
+                        canContinue: canOfferContinue,
+                        continueIsFree: subscriptionStore.removesAds,
+                        isContinuing: isContinuing,
+                        onContinue: { await handleContinue() },
+                        restart: { Task { await handleRestart() } },
                         gameCenter: gameCenter
                     )
                 }
@@ -111,7 +119,75 @@ struct ContentView: View {
             .fullScreenCover(isPresented: $isPaywallPresented) {
                 PaywallView(subscriptionStore: subscriptionStore, dismiss: { isPaywallPresented = false })
             }
+            .onChange(of: viewModel.state.isGameOver) { _, isGameOver in
+                guard isGameOver else { return }
+                // Pre-load the rewarded/interstitial ads the moment a run ends so the
+                // "Continue" tap is instant for free players.
+                if !subscriptionStore.removesAds {
+                    fullScreenAds.warmUp()
+                }
+                // A revive flips isGameOver false→true again, re-firing this handler for the
+                // same run; only count/prompt on the run's first game over.
+                if !viewModel.didUseReviveThisRun {
+                    maybeRequestReview()
+                }
+            }
         }
+    }
+
+    /// A continue can be offered when the player still has their once-per-run revive and we
+    /// can actually deliver it — for free of charge to ad-removed players, or via a rewarded
+    /// ad when one is configured for this build.
+    private var canOfferContinue: Bool {
+        viewModel.canRevive && (subscriptionStore.removesAds || fullScreenAds.isRewardedConfigured)
+    }
+
+    @MainActor
+    private func handleContinue() async {
+        guard viewModel.canRevive, !isContinuing else { return }
+
+        // Players who removed ads get the continue as a free perk.
+        if subscriptionStore.removesAds {
+            viewModel.revive()
+            return
+        }
+
+        // Everyone else watches a rewarded ad — only revive if they earned the reward.
+        isContinuing = true
+        let earned = await fullScreenAds.showRewardedContinue()
+        isContinuing = false
+        if earned {
+            viewModel.revive()
+        }
+    }
+
+    @MainActor
+    private func handleRestart() async {
+        // Pace an interstitial between games for free players, then start the next run.
+        await fullScreenAds.registerGameOverAndMaybeShowInterstitial(removesAds: subscriptionStore.removesAds)
+        viewModel.restart()
+    }
+
+    /// Asks for an App Store rating at a genuine high point — a new best score, after the
+    /// player has put in a few games — and at most once per app version. More ratings lift
+    /// App Store ranking, which is free user acquisition. (iOS also throttles this to a few
+    /// prompts per year.)
+    private func maybeRequestReview() {
+        let defaults = UserDefaults.standard
+        let gamesFinishedKey = "shiftblast.gamesFinished"
+        let reviewVersionKey = "shiftblast.reviewPromptVersion"
+
+        let gamesFinished = defaults.integer(forKey: gamesFinishedKey) + 1
+        defaults.set(gamesFinished, forKey: gamesFinishedKey)
+
+        let isNewBest = viewModel.state.score > 0 && viewModel.state.score >= viewModel.state.bestScore
+        guard isNewBest, gamesFinished >= 4 else { return }
+
+        let version = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "?"
+        guard defaults.string(forKey: reviewVersionKey) != version else { return }
+        defaults.set(version, forKey: reviewVersionKey)
+
+        requestReview()
     }
 
     private var swipeGesture: some Gesture {
@@ -1038,8 +1114,14 @@ private struct GameOverView: View {
     let bestScore: Int
     let moves: Int
     let leaderboard: [LeaderboardEntry]
+    let canContinue: Bool
+    let continueIsFree: Bool
+    let isContinuing: Bool
+    let onContinue: () async -> Void
     let restart: () -> Void
     @ObservedObject var gameCenter: GameCenterService
+
+    @State private var isSharePresented = false
 
     var body: some View {
         ZStack {
@@ -1067,6 +1149,12 @@ private struct GameOverView: View {
                 )
                 .task { await gameCenter.refreshAll() }
 
+                if canContinue {
+                    continueButton
+                }
+
+                shareButton
+
                 Button(action: restart) {
                     Image(systemName: "arrow.clockwise")
                         .font(.system(size: 24, weight: .black))
@@ -1084,6 +1172,66 @@ private struct GameOverView: View {
                     .stroke(Color.white.opacity(0.12), lineWidth: 1)
             )
             .padding(.horizontal, 18)
+        }
+    }
+
+    private var continueButton: some View {
+        Button {
+            Task { await onContinue() }
+        } label: {
+            HStack(spacing: 8) {
+                if isContinuing {
+                    ProgressView().tint(.black)
+                } else {
+                    Image(systemName: continueIsFree ? "play.fill" : "play.rectangle.fill")
+                        .font(.system(size: 16, weight: .black))
+                }
+                VStack(spacing: 1) {
+                    Text("CONTINUE")
+                        .font(.system(size: 15, weight: .black, design: .rounded))
+                    Text(continueIsFree ? "Clear space & keep your run" : "Watch an ad to keep your run")
+                        .font(.system(size: 10, weight: .bold, design: .rounded))
+                        .opacity(0.65)
+                }
+            }
+            .foregroundStyle(.black)
+            .frame(maxWidth: .infinity)
+            .padding(.vertical, 12)
+            .background(
+                LinearGradient(
+                    colors: [Color.shiftLime, Color.shiftCyan],
+                    startPoint: .leading,
+                    endPoint: .trailing
+                ),
+                in: RoundedRectangle(cornerRadius: 10, style: .continuous)
+            )
+        }
+        .disabled(isContinuing)
+        .accessibilityLabel("Continue")
+    }
+
+    private var shareButton: some View {
+        Button {
+            isSharePresented = true
+        } label: {
+            HStack(spacing: 8) {
+                Image(systemName: "square.and.arrow.up")
+                    .font(.system(size: 14, weight: .black))
+                Text("SHARE SCORE")
+                    .font(.system(size: 13, weight: .black, design: .rounded))
+            }
+            .foregroundStyle(.white.opacity(0.85))
+            .frame(maxWidth: .infinity)
+            .padding(.vertical, 11)
+            .background(Color.white.opacity(0.08), in: RoundedRectangle(cornerRadius: 10, style: .continuous))
+            .overlay(
+                RoundedRectangle(cornerRadius: 10, style: .continuous)
+                    .stroke(Color.white.opacity(0.12), lineWidth: 1)
+            )
+        }
+        .accessibilityLabel("Share score")
+        .sheet(isPresented: $isSharePresented) {
+            ShareSheet(items: [AppPromo.shareMessage(score: score, bestScore: bestScore)])
         }
     }
 }
