@@ -13,6 +13,11 @@ in CI without a Mac, an iPhone, or iCloud:
      for both event-based agents (Codex) and silence-only agents, including
      back-to-back turns, without emitting spurious signals.
 
+  3. Filesystem round-trip — writes/rewrites a sentinel on a real filesystem and
+     confirms the mtime advance fires the tracker and the payload is well-formed.
+     This exercises the whole chain EXCEPT the iCloud sync step, which is the one
+     part that genuinely requires Apple hardware.
+
 Run:  python3 scripts/verify-relay-logic.py   (exit 0 = all green)
 
 If you change the Swift logic, mirror it here so this stays a real guardrail.
@@ -206,9 +211,65 @@ def _len(got, n):
 
 
 # --------------------------------------------------------------------------
+# 3. Filesystem round-trip — exercises the whole chain on a real filesystem
+#    EXCEPT the iCloud sync step (which needs Apple hardware): write a sentinel
+#    the way SentinelWriter does, rewrite it, and confirm the mtime advance makes
+#    the tracker fire. Proves the payload is well-formed and the
+#    write → mtime-change → fire round-trip actually works on disk.
+# --------------------------------------------------------------------------
+
+import json
+import os
+import tempfile
+import time
+
+
+def _write_sentinel(path, reason):
+    # Mirror SentinelWriter.touch: a small sorted-keys JSON whose write bumps the
+    # file's modification date. Atomic replace, like the Swift coordinated write.
+    payload = {"reason": reason, "sentAt": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())}
+    data = json.dumps(payload, sort_keys=True)
+    tmp = path + ".tmp"
+    with open(tmp, "w") as f:
+        f.write(data)
+    os.replace(tmp, path)
+
+
+def filesystem_cases():
+    c = []
+
+    def t(name, fn):
+        c.append((name, fn))
+
+    def roundtrip():
+        with tempfile.TemporaryDirectory() as d:
+            sentinel = os.path.join(d, "agent-stop.flag")
+            tk = SentinelChangeTracker()
+
+            # Pre-existing sentinel at launch -> baseline, must NOT fire.
+            _write_sentinel(sentinel, "task_complete")
+            m0 = os.stat(sentinel).st_mtime
+            assert tk.observe(m0, POLL) is False, "baseline should not fire"
+
+            # Relay writes again (new turn end) -> mtime advances -> must fire.
+            time.sleep(0.02)
+            _write_sentinel(sentinel, "task_complete")
+            m1 = os.stat(sentinel).st_mtime
+            assert m1 > m0, f"rewrite must advance mtime ({m1} !> {m0})"
+            assert tk.observe(m1, POLL) is True, "new write must fire"
+
+            # Payload the relay produced must be valid JSON with the agreed keys.
+            obj = json.load(open(sentinel))
+            assert set(obj.keys()) == {"reason", "sentAt"}, obj
+
+    t("filesystem: write -> mtime advance -> tracker fires (sync excluded)", roundtrip)
+    return c
+
+
+# --------------------------------------------------------------------------
 
 def main():
-    cases = tracker_cases() + machine_cases()
+    cases = tracker_cases() + machine_cases() + filesystem_cases()
     failed = 0
     for name, fn in cases:
         try:
