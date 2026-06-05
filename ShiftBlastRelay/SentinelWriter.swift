@@ -37,6 +37,13 @@ enum SentinelWriter {
         ]
         let data = try JSONSerialization.data(withJSONObject: payload, options: [.sortedKeys])
 
+        // Best-effort remove of any existing sentinel before writing. Unlinking
+        // is a metadata operation that does NOT force a download, whereas opening
+        // an evicted ("dataless") iCloud file for writing can hang until it times
+        // out ("Operation timed out"). Clearing it first means the fresh write
+        // targets a non-existent path and never has to materialize old contents.
+        try? FileManager.default.removeItem(at: url)
+
         var coordError: NSError?
         var writeError: Error?
         NSFileCoordinator(filePresenter: nil).coordinate(
