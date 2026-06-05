@@ -355,7 +355,26 @@ final class SessionFileWatcher {
 
     private func shouldTrack(url: URL) -> Bool {
         let name = url.lastPathComponent
-        return name.hasSuffix(".jsonl") || name.hasSuffix(".sqlite-wal") || name.hasSuffix(".sqlite")
+        guard name.hasSuffix(".jsonl") || name.hasSuffix(".sqlite-wal") || name.hasSuffix(".sqlite") else {
+            return false
+        }
+        // Defense in depth: only ever read files that genuinely live inside a
+        // granted root. This rejects a symlink planted in the watched folder
+        // that resolves to a path outside the authorized tree.
+        return isUnderGrantedRoot(url)
+    }
+
+    /// True when `url`, after fully resolving symlinks, still sits inside one of
+    /// the security-scoped roots the user authorized.
+    private func isUnderGrantedRoot(_ url: URL) -> Bool {
+        let resolvedPath = url.resolvingSymlinksInPath().standardizedFileURL.path
+        for entry in resolved {
+            let rootPath = entry.url.resolvingSymlinksInPath().standardizedFileURL.path
+            if resolvedPath == rootPath || resolvedPath.hasPrefix(rootPath + "/") {
+                return true
+            }
+        }
+        return false
     }
 
     private func handleEvent(firstPath: String?) {
