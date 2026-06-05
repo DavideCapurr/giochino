@@ -47,8 +47,15 @@ echo "Sentinella"
 if [ -f "$SENTINEL" ]; then
   pass "sentinella presente: $SENTINEL"
   MOD="$(stat -f '%Sm' "$SENTINEL" 2>/dev/null || stat -c '%y' "$SENTINEL" 2>/dev/null)"
+  SIZE="$(stat -f '%z' "$SENTINEL" 2>/dev/null || stat -c '%s' "$SENTINEL" 2>/dev/null || echo 0)"
   pass "ultima modifica: $MOD"
   echo "      contenuto: $(cat "$SENTINEL" 2>/dev/null)"
+  # An empty/0-byte sentinel is the tell-tale of an evicted ("dataless") iCloud
+  # file: in-place writes to it hang/time out. Flag it and offer the one-liner.
+  if [ "${SIZE:-0}" = "0" ]; then
+    warn "sentinella VUOTA (0 byte) — probabile file iCloud incagliato/evicted; le scritture in-place vanno in timeout."
+    warn "rimedio: rm -f \"$SENTINEL\"  poi rilancia send-test-sentinel.sh (la versione corrente si auto-cura)."
+  fi
 else
   warn "nessuna sentinella ancora: usa 'Invia segnale di test' nel relay o scripts/send-test-sentinel.sh"
 fi
