@@ -4,14 +4,17 @@ import OSLog
 
 private let log = Logger(subsystem: "com.davide.shiftblast.relay", category: "Coordinator")
 
-/// Wires together the two detection layers (process exit + session-file
-/// silence) and centralises state for the menubar UI.
+/// Drives session-file detection (turn start/finish parsed from the agent's
+/// transcript, with a silence-window fallback) and centralises state for the
+/// menubar UI. On each detected turn end it writes the iCloud sentinel the iOS
+/// app watches.
 @MainActor
 final class RelayCoordinator: ObservableObject {
     @Published private(set) var lastSignal: Date?
     @Published private(set) var lastReason: String?
     @Published private(set) var grantedSlugs: Set<String> = []
     @Published private(set) var sentinelStatus: String = "pronto"
+    @Published private(set) var iCloudReady: Bool = false
     @Published var loginItemEnabled: Bool = false
 
     private let bookmarkStore = BookmarkStore()
@@ -23,8 +26,25 @@ final class RelayCoordinator: ObservableObject {
         log.notice("🚀 ShiftBlast Relay avviato — sentinella: \(SentinelWriter.sentinelURL()?.path ?? "n/d", privacy: .public)")
         loginItemEnabled = LoginItemManager.isEnabled
         refreshGrantedSlugs()
+        refreshICloudStatus()
 
         rebuildSessionWatcher()
+    }
+
+    /// Re-checks whether the real iCloud container is reachable. Surfaced in the
+    /// menu so the user can tell "relay running" from "relay can actually reach
+    /// iCloud" — the latter is what the iOS app depends on.
+    func refreshICloudStatus() {
+        iCloudReady = SentinelWriter.isICloudReady
+    }
+
+    /// Writes a sentinel immediately, bypassing the throttle, so the user can
+    /// verify the relay → iCloud → iOS link with a single click without waiting
+    /// for a real agent turn.
+    func sendTestSignal() {
+        refreshICloudStatus()
+        lastSignalTime = .distantPast
+        signal(reason: "test manuale dal menu")
     }
 
     func stop() {
@@ -103,7 +123,10 @@ final class RelayCoordinator: ObservableObject {
             try SentinelWriter.touch(reason: reason)
             lastSignal = now
             lastReason = reason
-            sentinelStatus = "ultimo invio: \(formatted(now))"
+            iCloudReady = SentinelWriter.isICloudReady
+            sentinelStatus = iCloudReady
+                ? "ultimo invio: \(formatted(now))"
+                : "inviato \(formatted(now)) — ⚠️ iCloud non pronto, l'app potrebbe non riceverlo"
             log.notice("📡 SENTINELLA scritta — motivo: \(reason, privacy: .public)")
         } catch {
             sentinelStatus = "errore: \(error.localizedDescription)"

@@ -23,12 +23,20 @@ final class SessionFileWatcher {
     private var lastObservedWrite: FileWriteSnapshot?
     private var lastFinishedAt: Date?
     private var lastFinishedURL: URL?
+    private var lastFinishWasEvent = false
     private var isTurnActive = false
     private var activeTurnID: String?
     private var completedTurnIDs: Set<String> = []
     private var fileOffsets: [String: UInt64] = [:]
     private var pendingLines: [String: String] = [:]
     private let queue = DispatchQueue(label: "shiftblast.relay.fsevents")
+
+    /// Hard caps that bound memory when parsing untrusted session files. A
+    /// corrupt or maliciously-inflated transcript can't exhaust memory: oversized
+    /// appends and unterminated lines are skipped (treated as plain activity, so
+    /// the silence fallback still detects the turn end).
+    private let maxAppendChunkBytes: UInt64 = 8 * 1024 * 1024   // 8 MB per read
+    private let maxPendingLineBytes = 1 * 1024 * 1024           // 1 MB partial line
 
     init(
         silenceWindow: TimeInterval = 15.0,
@@ -114,6 +122,7 @@ final class SessionFileWatcher {
         lastObservedWrite = nil
         lastFinishedAt = nil
         lastFinishedURL = nil
+        lastFinishWasEvent = false
         isTurnActive = false
         activeTurnID = nil
         completedTurnIDs = []
@@ -221,6 +230,15 @@ final class SessionFileWatcher {
                 return ParsedSessionAppend()
             }
 
+            // Bound the single-pass read: an inflated/corrupt file can't make us
+            // load an unbounded blob into memory. Fast-forward and let the
+            // silence fallback handle the turn end.
+            if currentOffset - previousOffset > maxAppendChunkBytes {
+                fileOffsets[url.path] = currentOffset
+                pendingLines[url.path] = nil
+                return ParsedSessionAppend(sawActivity: true, didFinish: false)
+            }
+
             try handle.seek(toOffset: previousOffset)
             let data = try handle.readToEnd() ?? Data()
             fileOffsets[url.path] = currentOffset
@@ -230,7 +248,14 @@ final class SessionFileWatcher {
             if chunk.hasSuffix("\n") {
                 pendingLines[url.path] = nil
             } else {
-                pendingLines[url.path] = lines.popLast()
+                let tail = lines.popLast()
+                // Drop an unterminated line that grows past the cap so a file
+                // with no newlines can't inflate the pending buffer unbounded.
+                if let tail, tail.utf8.count <= maxPendingLineBytes {
+                    pendingLines[url.path] = tail
+                } else {
+                    pendingLines[url.path] = nil
+                }
             }
 
             var parsed = ParsedSessionAppend()
@@ -330,7 +355,26 @@ final class SessionFileWatcher {
 
     private func shouldTrack(url: URL) -> Bool {
         let name = url.lastPathComponent
-        return name.hasSuffix(".jsonl") || name.hasSuffix(".sqlite-wal") || name.hasSuffix(".sqlite")
+        guard name.hasSuffix(".jsonl") || name.hasSuffix(".sqlite-wal") || name.hasSuffix(".sqlite") else {
+            return false
+        }
+        // Defense in depth: only ever read files that genuinely live inside a
+        // granted root. This rejects a symlink planted in the watched folder
+        // that resolves to a path outside the authorized tree.
+        return isUnderGrantedRoot(url)
+    }
+
+    /// True when `url`, after fully resolving symlinks, still sits inside one of
+    /// the security-scoped roots the user authorized.
+    private func isUnderGrantedRoot(_ url: URL) -> Bool {
+        let resolvedPath = url.resolvingSymlinksInPath().standardizedFileURL.path
+        for entry in resolved {
+            let rootPath = entry.url.resolvingSymlinksInPath().standardizedFileURL.path
+            if resolvedPath == rootPath || resolvedPath.hasPrefix(rootPath + "/") {
+                return true
+            }
+        }
+        return false
     }
 
     private func handleEvent(firstPath: String?) {
@@ -339,8 +383,10 @@ final class SessionFileWatcher {
             log.debug("✏️ scrittura rilevata: \(firstPath, privacy: .public)")
         }
         let url = lastTriggerURL ?? resolved.first?.url
-        if !isTurnActive, let url {
-            if isIgnoringLateWrite(for: url) { return }
+        // Mark a turn as started unless these are trailing writes flushed right
+        // after an event-based finish. We still (re)arm the silence timer below,
+        // so a genuinely new turn is detected even within that window.
+        if !isTurnActive, let url, !isIgnoringLateWrite(for: url) {
             isTurnActive = true
             log.notice("▶️ risposta agente rilevata in \(url.lastPathComponent, privacy: .public)")
             onTurnStarted(url)
@@ -363,8 +409,13 @@ final class SessionFileWatcher {
         onTurnStarted(url)
     }
 
+    /// True only while we're inside the window that swallows trailing writes
+    /// flushed right after an **event-based** finish (e.g. Codex emitting
+    /// `token_count` after `task_complete`). A silence-based finish leaves no
+    /// trailing writes, so we never suppress after one — that's what lets
+    /// back-to-back turns of silence-only agents still be detected.
     private func isIgnoringLateWrite(for url: URL) -> Bool {
-        guard let lastFinishedAt, let lastFinishedURL else { return false }
+        guard lastFinishWasEvent, let lastFinishedAt, let lastFinishedURL else { return false }
         let isSameRoot = url.path == lastFinishedURL.path
         return isSameRoot && Date().timeIntervalSince(lastFinishedAt) < 20
     }
@@ -380,6 +431,7 @@ final class SessionFileWatcher {
         lastTriggerURL = url
         lastFinishedAt = Date()
         lastFinishedURL = url
+        lastFinishWasEvent = true
         log.notice("✅ evento Codex \(reason, privacy: .public) in \(fileURL.lastPathComponent, privacy: .public) → fine risposta")
         onTurnFinished(url)
     }
@@ -387,10 +439,17 @@ final class SessionFileWatcher {
     private func fireSilence() {
         let url = lastTriggerURL ?? resolved.first?.url
         guard let url else { return }
+        // Silence following trailing writes after an event-based finish is not a
+        // new turn — drop it instead of emitting a duplicate signal.
+        if isIgnoringLateWrite(for: url) {
+            isTurnActive = false
+            return
+        }
         isTurnActive = false
         activeTurnID = nil
         lastFinishedAt = Date()
         lastFinishedURL = url
+        lastFinishWasEvent = false
         log.notice("🤫 silenzio di \(self.silenceWindow, privacy: .public)s in \(url.lastPathComponent, privacy: .public) → fine risposta")
         onTurnFinished(url)
     }

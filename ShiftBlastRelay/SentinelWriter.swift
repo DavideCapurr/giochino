@@ -16,6 +16,14 @@ enum SentinelWriter {
         return docs.appendingPathComponent(sentinelName)
     }
 
+    /// True only when the real iCloud ubiquity container is provisioned and
+    /// reachable. When this is false the sentinel cannot actually sync to the
+    /// iOS app, so the relay surfaces it instead of silently writing to a
+    /// physical path the sandbox can't propagate.
+    static var isICloudReady: Bool {
+        ubiquityDocumentsURL() != nil
+    }
+
     static func touch(reason: String) throws {
         guard let url = sentinelURL() else { throw WriteError.containerUnavailable }
         try FileManager.default.createDirectory(
@@ -45,12 +53,15 @@ enum SentinelWriter {
     }
 
     static func containerDocumentsURL() -> URL? {
-        if let ubiquity = FileManager.default.url(forUbiquityContainerIdentifier: containerIdentifier)?
-            .appendingPathComponent("Documents", isDirectory: true)
-        {
+        if let ubiquity = ubiquityDocumentsURL() {
             return ubiquity
         }
         return macPhysicalContainerDocumentsURL()
+    }
+
+    private static func ubiquityDocumentsURL() -> URL? {
+        FileManager.default.url(forUbiquityContainerIdentifier: containerIdentifier)?
+            .appendingPathComponent("Documents", isDirectory: true)
     }
 
     private static func macPhysicalContainerDocumentsURL() -> URL? {
