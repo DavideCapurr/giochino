@@ -1,6 +1,7 @@
 import Foundation
 import SwiftUI
 import OSLog
+import Darwin
 
 private let log = Logger(subsystem: "com.davide.shiftblast.relay", category: "Coordinator")
 
@@ -24,11 +25,31 @@ final class RelayCoordinator: ObservableObject {
 
     func start() {
         log.notice("🚀 ShiftBlast Relay avviato — sentinella: \(SentinelWriter.sentinelURL()?.path ?? "n/d", privacy: .public)")
+        Self.raiseOpenFileLimit()
         loginItemEnabled = LoginItemManager.isEnabled
         refreshGrantedSlugs()
         refreshICloudStatus()
 
         rebuildSessionWatcher()
+    }
+
+    /// Raises the process's open-file soft limit. A GUI app often launches with
+    /// a low limit (256); watching a large tree like `~/.claude/projects`
+    /// (enumeration + transient handles) can exhaust it and make every file op —
+    /// including the sentinel write — fail with "Too many open files". Bump the
+    /// soft limit toward the hard limit so legitimate file activity has headroom.
+    private static func raiseOpenFileLimit() {
+        var limits = rlimit()
+        guard getrlimit(RLIMIT_NOFILE, &limits) == 0 else { return }
+        let desired: rlim_t = 8192
+        let target = limits.rlim_max == RLIM_INFINITY ? desired : min(limits.rlim_max, desired)
+        guard limits.rlim_cur < target else { return }
+        limits.rlim_cur = target
+        if setrlimit(RLIMIT_NOFILE, &limits) == 0 {
+            log.notice("📈 limite file descriptor alzato a \(target, privacy: .public)")
+        } else {
+            log.error("⚠️ impossibile alzare il limite file descriptor (errno \(errno, privacy: .public))")
+        }
     }
 
     /// Re-checks whether the real iCloud container is reachable. Surfaced in the
