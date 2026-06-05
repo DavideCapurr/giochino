@@ -15,3 +15,7 @@ Package.resolved
 # Playgrounds
 timeline.xctimeline
 playground.xcworkspace
+
+# Python
+__pycache__/
+*.pyc
