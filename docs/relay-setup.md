@@ -103,3 +103,28 @@ pause the game within a few seconds and log `📡 sentinella rilevata`.
 
 Console filters: subsystem `com.davide.shiftblast.relay` (Mac) and
 `com.davide.shiftblast` (iOS).
+
+## Security posture
+
+Threat model and the defenses that back it:
+
+- **No network surface.** Neither the relay nor the watcher opens a socket. The
+  only channel is the iCloud sentinel file. There is nothing to attack remotely.
+- **Authenticated channel.** The sentinel lives in `iCloud.com.davide.shiftblast`,
+  reached only through `url(forUbiquityContainerIdentifier:)`. Only apps signed
+  by the same Apple Developer team's iCloud entitlement can write there, so a
+  third-party app cannot inject signals.
+- **Untrusted transcript parsing is contained.** The relay parses agent JSONL
+  with `JSONSerialization` and optional casts only; values drive a state machine
+  via string comparisons and are never interpolated into a path, command, or
+  query. Parse failures degrade to "activity". Reads are bounded (8 MB per pass,
+  1 MB partial line) so a corrupt/inflated file can't exhaust memory.
+- **Least privilege file access.** The relay is sandboxed with **read-only**
+  user-selected file access via security-scoped bookmarks, and `shouldTrack`
+  resolves symlinks and refuses any file that escapes a granted root — so a
+  symlink planted in a watched folder can't redirect reads outside the tree.
+- **No payload trust on iOS.** The app reacts only to the sentinel's
+  modification date; it never parses the payload, so the file's contents are not
+  an input to any sink.
+
+A focused security review of this branch found no exploitable vulnerabilities.
