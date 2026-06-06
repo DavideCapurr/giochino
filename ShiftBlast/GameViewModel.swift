@@ -25,6 +25,13 @@ final class GameViewModel: ObservableObject {
     @Published
     var isAgentPaused: Bool = false
 
+    /// When the watcher last observed a sentinel signal, regardless of whether it
+    /// paused the game. Surfaced in Settings so the link can be verified on the
+    /// phone: if this updates after a test signal but the game didn't pause, the
+    /// issue is local; if it never updates, the signal isn't reaching the device.
+    @Published
+    var lastAgentSignalAt: Date?
+
     @Published
     var isSnoozed: Bool = false
 
@@ -121,6 +128,7 @@ final class GameViewModel: ObservableObject {
     }
 
     func handleAgentReadySignal() {
+        lastAgentSignalAt = Date()
         guard !isAgentPaused else { return }
         freezeActiveMoveIfNeeded()
         store.save(state)
