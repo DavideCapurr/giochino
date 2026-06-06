@@ -41,8 +41,9 @@ final class RelayCoordinator: ObservableObject {
     private static func raiseOpenFileLimit() {
         var limits = rlimit()
         guard getrlimit(RLIMIT_NOFILE, &limits) == 0 else { return }
-        let desired: rlim_t = 8192
-        let target = limits.rlim_max == RLIM_INFINITY ? desired : min(limits.rlim_max, desired)
+        // Clamp to the hard limit. If the hard limit is "unlimited" it's a huge
+        // sentinel value, so min() still yields our target.
+        let target = min(limits.rlim_max, rlim_t(8192))
         guard limits.rlim_cur < target else { return }
         limits.rlim_cur = target
         if setrlimit(RLIMIT_NOFILE, &limits) == 0 {
