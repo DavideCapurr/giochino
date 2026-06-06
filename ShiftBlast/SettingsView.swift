@@ -249,10 +249,11 @@ struct SettingsView: View {
 
     private var aiStatusText: String {
         guard subscriptionStore.isPremium else { return "Locked" }
-        if AgentSignalWatcher.isAvailable {
-            return "iCloud bridge connected"
-        }
-        return "iCloud not available"
+        let base = AgentSignalWatcher.isAvailable ? "iCloud bridge connected" : "iCloud not available"
+        guard let last = viewModel.lastAgentSignalAt else { return base }
+        let formatter = DateFormatter()
+        formatter.dateFormat = "HH:mm:ss"
+        return "\(base) · last signal \(formatter.string(from: last))"
     }
 
     // MARK: - Game
