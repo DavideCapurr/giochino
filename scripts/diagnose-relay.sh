@@ -61,10 +61,32 @@ else
 fi
 
 echo "Relay in esecuzione"
-if pgrep -x "ShiftBlastRelay" >/dev/null 2>&1; then
-  pass "processo ShiftBlastRelay attivo"
+RELAY_PID="$(pgrep -x "ShiftBlastRelay" 2>/dev/null | head -n1)"
+if [ -n "${RELAY_PID:-}" ]; then
+  pass "processo ShiftBlastRelay attivo (pid $RELAY_PID)"
 else
   warn "ShiftBlastRelay non in esecuzione"
+fi
+
+# File descriptor del relay — è la causa diretta di "Too many open files".
+# Se gli FD aperti sono vicini al limite soft del processo, il relay ha esaurito
+# la tabella e ogni scrittura (sentinella inclusa) fallisce con EMFILE.
+echo "File descriptor del relay"
+if [ -n "${RELAY_PID:-}" ]; then
+  if command -v lsof >/dev/null 2>&1; then
+    FD_OPEN="$(lsof -p "$RELAY_PID" -F f 2>/dev/null | grep -c '^f')"
+    pass "FD aperti dal relay: $FD_OPEN"
+    SYS_MAX="$(launchctl limit maxfiles 2>/dev/null | awk '{print $2}')"
+    [ -n "${SYS_MAX:-}" ] && pass "limite maxfiles di sistema (soft): $SYS_MAX"
+    if [ "${FD_OPEN:-0}" -gt 240 ]; then
+      warn "molti FD aperti: se compare 'Too many open files', il limite soft del processo è troppo basso (default 256) o c'è una perdita."
+      warn "il relay alza da solo il limite all'avvio; se resta basso, controlla i log Console (subsystem com.davide.shiftblast.relay → '📈 limite file descriptor')."
+    fi
+  else
+    warn "lsof non disponibile: impossibile contare gli FD aperti"
+  fi
+else
+  warn "relay non in esecuzione: impossibile contare gli FD"
 fi
 
 if [ "$PROBE" = "1" ]; then
