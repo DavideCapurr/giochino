@@ -3,6 +3,61 @@
 How the macOS menu-bar **ShiftBlast Relay** talks to the **ShiftBlast** iOS game,
 and how to verify the link works end to end.
 
+> **Why a phone can't just read the agent's notification.** iOS sandboxing forbids
+> any app from reading another app's notifications, so ShiftBlast can never
+> "intercept" a Claude Code / Codex notification directly. The signal must be
+> delivered to the ShiftBlast app itself. The only options are a shared iCloud
+> file (used here, no backend) or a real push via APNs (needs a server). The
+> iCloud sentinel is the simplest native channel that works without infrastructure.
+
+## Simplest setup: a Claude Code `Stop` hook (recommended)
+
+You don't actually need to keep the standalone relay app running. Claude Code can
+*be* the trigger: its **`Stop` hook** fires the moment the agent finishes a turn,
+which is exactly when we want the phone to pause.
+
+```
+Claude Code finishes a turn
+        │  Stop hook
+        ▼
+scripts/claude-stop-hook.sh ──writes──▶ agent-stop.flag (iCloud) ──sync──▶ ShiftBlast (iOS)
+                                                                              → game pauses
+```
+
+This removes all the moving parts of the menubar relay (FSEvents, security-scoped
+bookmarks, JSONL parsing, file-descriptor limits) and reuses the already-tested
+iCloud → iOS half (`AgentSignalWatcher`).
+
+**Install once on the Mac**, in `~/.claude/settings.json` (use the absolute path
+to your checkout):
+
+```json
+{
+  "hooks": {
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "/ABSOLUTE/PATH/giochino/scripts/claude-stop-hook.sh"
+          }
+        ]
+      }
+    ]
+  }
+}
+```
+
+The script always exits 0 (a best-effort phone pause must never block Claude),
+writes atomically, and self-heals an evicted iCloud sentinel. After saving the
+settings, finish any Claude Code turn and the phone should pause within a few
+seconds — same iCloud requirements as below (same account, iCloud Drive on,
+Premium app in the foreground).
+
+The standalone **ShiftBlast Relay** app documented in the rest of this file
+remains a valid alternative — e.g. if you want to bridge Codex/Aider, or another
+agent that doesn't expose a Stop hook.
+
 ## How it works
 
 ```
