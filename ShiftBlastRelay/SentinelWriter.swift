@@ -25,38 +25,43 @@ enum SentinelWriter {
     }
 
     static func touch(reason: String) throws {
-        guard let url = sentinelURL() else { throw WriteError.containerUnavailable }
-        try FileManager.default.createDirectory(
-            at: url.deletingLastPathComponent(),
-            withIntermediateDirectories: true
-        )
+        // Coordinated writes and the file coordinator spin up short-lived helper
+        // objects/descriptors; draining them in an explicit pool keeps the write
+        // from contributing to descriptor pressure when it's called back-to-back.
+        try autoreleasepool {
+            guard let url = sentinelURL() else { throw WriteError.containerUnavailable }
+            try FileManager.default.createDirectory(
+                at: url.deletingLastPathComponent(),
+                withIntermediateDirectories: true
+            )
 
-        let payload: [String: String] = [
-            "sentAt": ISO8601DateFormatter().string(from: Date()),
-            "reason": reason
-        ]
-        let data = try JSONSerialization.data(withJSONObject: payload, options: [.sortedKeys])
+            let payload: [String: String] = [
+                "sentAt": ISO8601DateFormatter().string(from: Date()),
+                "reason": reason
+            ]
+            let data = try JSONSerialization.data(withJSONObject: payload, options: [.sortedKeys])
 
-        // Best-effort remove of any existing sentinel before writing. Unlinking
-        // is a metadata operation that does NOT force a download, whereas opening
-        // an evicted ("dataless") iCloud file for writing can hang until it times
-        // out ("Operation timed out"). Clearing it first means the fresh write
-        // targets a non-existent path and never has to materialize old contents.
-        try? FileManager.default.removeItem(at: url)
+            // Best-effort remove of any existing sentinel before writing. Unlinking
+            // is a metadata operation that does NOT force a download, whereas opening
+            // an evicted ("dataless") iCloud file for writing can hang until it times
+            // out ("Operation timed out"). Clearing it first means the fresh write
+            // targets a non-existent path and never has to materialize old contents.
+            try? FileManager.default.removeItem(at: url)
 
-        var coordError: NSError?
-        var writeError: Error?
-        NSFileCoordinator(filePresenter: nil).coordinate(
-            writingItemAt: url, options: .forReplacing, error: &coordError
-        ) { coordURL in
-            do {
-                try data.write(to: coordURL, options: [.atomic])
-            } catch {
-                writeError = error
+            var coordError: NSError?
+            var writeError: Error?
+            NSFileCoordinator(filePresenter: nil).coordinate(
+                writingItemAt: url, options: .forReplacing, error: &coordError
+            ) { coordURL in
+                do {
+                    try data.write(to: coordURL, options: [.atomic])
+                } catch {
+                    writeError = error
+                }
             }
+            if let writeError { throw writeError }
+            if let coordError { throw coordError }
         }
-        if let writeError { throw writeError }
-        if let coordError { throw coordError }
     }
 
     static func containerDocumentsURL() -> URL? {

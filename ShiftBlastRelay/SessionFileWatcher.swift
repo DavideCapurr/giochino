@@ -190,20 +190,24 @@ final class SessionFileWatcher {
         let keys: [URLResourceKey] = [.fileSizeKey, .isRegularFileKey]
 
         for entry in resolved {
-            guard let enumerator = FileManager.default.enumerator(
-                at: entry.url,
-                includingPropertiesForKeys: keys,
-                options: [],
-                errorHandler: nil
-            ) else {
-                continue
-            }
+            autoreleasepool {
+                guard let enumerator = FileManager.default.enumerator(
+                    at: entry.url,
+                    includingPropertiesForKeys: keys,
+                    options: [],
+                    errorHandler: nil
+                ) else {
+                    return
+                }
 
-            for case let url as URL in enumerator {
-                guard shouldTrack(url: url) else { continue }
-                guard let values = try? url.resourceValues(forKeys: Set(keys)) else { continue }
-                guard values.isRegularFile == true, let size = values.fileSize else { continue }
-                fileOffsets[url.path] = UInt64(size)
+                for case let url as URL in enumerator {
+                    autoreleasepool {
+                        guard shouldTrack(url: url) else { return }
+                        guard let values = try? url.resourceValues(forKeys: Set(keys)) else { return }
+                        guard values.isRegularFile == true, let size = values.fileSize else { return }
+                        fileOffsets[url.path] = UInt64(size)
+                    }
+                }
             }
         }
     }
@@ -213,62 +217,69 @@ final class SessionFileWatcher {
             return ParsedSessionAppend(sawActivity: true, didFinish: false)
         }
 
-        do {
-            let handle = try FileHandle(forReadingFrom: url)
-            defer {
-                try? handle.close()
-            }
+        // Drain the file handle and the data/string temporaries within an explicit
+        // autorelease pool. FSEvents can deliver a burst of writes, each handled
+        // on a Swift-Concurrency task that has no surrounding pool of its own, so
+        // without this the underlying descriptors/buffers can pile up between run
+        // loop drains and tip the process into EMFILE.
+        return autoreleasepool {
+            do {
+                let handle = try FileHandle(forReadingFrom: url)
+                defer {
+                    try? handle.close()
+                }
 
-            let currentOffset = try handle.seekToEnd()
-            let previousOffset = fileOffsets[url.path] ?? currentOffset
-            guard currentOffset >= previousOffset else {
-                fileOffsets[url.path] = currentOffset
-                pendingLines[url.path] = nil
-                return ParsedSessionAppend()
-            }
-            guard currentOffset > previousOffset else {
-                return ParsedSessionAppend()
-            }
+                let currentOffset = try handle.seekToEnd()
+                let previousOffset = fileOffsets[url.path] ?? currentOffset
+                guard currentOffset >= previousOffset else {
+                    fileOffsets[url.path] = currentOffset
+                    pendingLines[url.path] = nil
+                    return ParsedSessionAppend()
+                }
+                guard currentOffset > previousOffset else {
+                    return ParsedSessionAppend()
+                }
 
-            // Bound the single-pass read: an inflated/corrupt file can't make us
-            // load an unbounded blob into memory. Fast-forward and let the
-            // silence fallback handle the turn end.
-            if currentOffset - previousOffset > maxAppendChunkBytes {
+                // Bound the single-pass read: an inflated/corrupt file can't make
+                // us load an unbounded blob into memory. Fast-forward and let the
+                // silence fallback handle the turn end.
+                if currentOffset - previousOffset > maxAppendChunkBytes {
+                    fileOffsets[url.path] = currentOffset
+                    pendingLines[url.path] = nil
+                    return ParsedSessionAppend(sawActivity: true, didFinish: false)
+                }
+
+                try handle.seek(toOffset: previousOffset)
+                let data = try handle.readToEnd() ?? Data()
                 fileOffsets[url.path] = currentOffset
-                pendingLines[url.path] = nil
+
+                let chunk = (pendingLines[url.path] ?? "") + String(decoding: data, as: UTF8.self)
+                var lines = chunk.split(separator: "\n", omittingEmptySubsequences: false).map(String.init)
+                if chunk.hasSuffix("\n") {
+                    pendingLines[url.path] = nil
+                } else {
+                    let tail = lines.popLast()
+                    // Drop an unterminated line that grows past the cap so a file
+                    // with no newlines can't inflate the pending buffer unbounded.
+                    if let tail, tail.utf8.count <= maxPendingLineBytes {
+                        pendingLines[url.path] = tail
+                    } else {
+                        pendingLines[url.path] = nil
+                    }
+                }
+
+                var parsed = ParsedSessionAppend()
+                for line in lines {
+                    guard !line.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { continue }
+                    let lineResult = processSessionLine(line, fileURL: url)
+                    parsed.sawActivity = parsed.sawActivity || lineResult.sawActivity
+                    parsed.didFinish = parsed.didFinish || lineResult.didFinish
+                }
+                return parsed
+            } catch {
+                log.debug("JSONL non leggibile per parsing eventi: \(url.path, privacy: .public)")
                 return ParsedSessionAppend(sawActivity: true, didFinish: false)
             }
-
-            try handle.seek(toOffset: previousOffset)
-            let data = try handle.readToEnd() ?? Data()
-            fileOffsets[url.path] = currentOffset
-
-            let chunk = (pendingLines[url.path] ?? "") + String(decoding: data, as: UTF8.self)
-            var lines = chunk.split(separator: "\n", omittingEmptySubsequences: false).map(String.init)
-            if chunk.hasSuffix("\n") {
-                pendingLines[url.path] = nil
-            } else {
-                let tail = lines.popLast()
-                // Drop an unterminated line that grows past the cap so a file
-                // with no newlines can't inflate the pending buffer unbounded.
-                if let tail, tail.utf8.count <= maxPendingLineBytes {
-                    pendingLines[url.path] = tail
-                } else {
-                    pendingLines[url.path] = nil
-                }
-            }
-
-            var parsed = ParsedSessionAppend()
-            for line in lines {
-                guard !line.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { continue }
-                let lineResult = processSessionLine(line, fileURL: url)
-                parsed.sawActivity = parsed.sawActivity || lineResult.sawActivity
-                parsed.didFinish = parsed.didFinish || lineResult.didFinish
-            }
-            return parsed
-        } catch {
-            log.debug("JSONL non leggibile per parsing eventi: \(url.path, privacy: .public)")
-            return ParsedSessionAppend(sawActivity: true, didFinish: false)
         }
     }
 
@@ -331,21 +342,25 @@ final class SessionFileWatcher {
         let keys: [URLResourceKey] = [.contentModificationDateKey, .isRegularFileKey]
 
         for entry in resolved {
-            guard let enumerator = FileManager.default.enumerator(
-                at: entry.url,
-                includingPropertiesForKeys: keys,
-                options: [],
-                errorHandler: nil
-            ) else {
-                continue
-            }
+            autoreleasepool {
+                guard let enumerator = FileManager.default.enumerator(
+                    at: entry.url,
+                    includingPropertiesForKeys: keys,
+                    options: [],
+                    errorHandler: nil
+                ) else {
+                    return
+                }
 
-            for case let url as URL in enumerator {
-                guard shouldTrack(url: url) else { continue }
-                guard let values = try? url.resourceValues(forKeys: Set(keys)) else { continue }
-                guard values.isRegularFile == true, let modificationDate = values.contentModificationDate else { continue }
-                if latest == nil || modificationDate > latest!.modificationDate {
-                    latest = FileWriteSnapshot(url: url, modificationDate: modificationDate)
+                for case let url as URL in enumerator {
+                    autoreleasepool {
+                        guard shouldTrack(url: url) else { return }
+                        guard let values = try? url.resourceValues(forKeys: Set(keys)) else { return }
+                        guard values.isRegularFile == true, let modificationDate = values.contentModificationDate else { return }
+                        if latest == nil || modificationDate > latest!.modificationDate {
+                            latest = FileWriteSnapshot(url: url, modificationDate: modificationDate)
+                        }
+                    }
                 }
             }
         }
