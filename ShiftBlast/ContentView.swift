@@ -6,7 +6,7 @@ struct ContentView: View {
     @EnvironmentObject var gameCenter: GameCenterService
     @Environment(\.requestReview) private var requestReview
     @State private var isPaywallPresented = false
-    @State private var isSettingsPresented = ProcessInfo.processInfo.arguments.contains("-uiPreviewSettings")
+    @State private var isSettingsPresented = false
     @State private var isContinuing = false
 
     private let fullScreenAds = FullScreenAdCoordinator.shared
