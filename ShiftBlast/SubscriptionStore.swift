@@ -28,6 +28,10 @@ final class SubscriptionStore: ObservableObject {
     @Published private(set) var hasRemoveAds = false
     @Published private(set) var state: PurchaseState = .idle
     @Published private(set) var didFinishLoadingProducts = false
+    /// Whether the monthly subscription's free-trial intro offer can actually be granted to
+    /// this user. Apple gives an intro offer at most once per subscription group, so the
+    /// paywall must not advertise a "free trial" to returning subscribers.
+    @Published private(set) var isEligibleForIntroOffer = false
 
     /// Whether ads should be hidden — true for premium subscribers and for one-time
     /// "Remove Ads" buyers.
@@ -43,18 +47,6 @@ final class SubscriptionStore: ObservableObject {
 
     var removeAdsProduct: Product? {
         products.first { $0.id == Self.removeAdsProductID }
-    }
-
-    var premiumDisplayPrice: String {
-        premiumProduct?.displayPrice ?? "$2.99"
-    }
-
-    var premiumLifetimeDisplayPrice: String {
-        premiumLifetimeProduct?.displayPrice ?? "$9.99"
-    }
-
-    var removeAdsDisplayPrice: String {
-        removeAdsProduct?.displayPrice ?? "$3.99"
     }
 
     private var updatesTask: Task<Void, Never>?
@@ -77,6 +69,20 @@ final class SubscriptionStore: ObservableObject {
         updatesTask = listenForTransactions()
         await loadProducts()
         await refreshEntitlements()
+        await refreshIntroEligibility()
+    }
+
+    /// Resolves whether the monthly subscription's introductory (free-trial) offer is
+    /// available to this user, so the paywall can label its CTA honestly.
+    private func refreshIntroEligibility() async {
+        guard
+            let subscription = premiumProduct?.subscription,
+            subscription.introductoryOffer != nil
+        else {
+            isEligibleForIntroOffer = false
+            return
+        }
+        isEligibleForIntroOffer = await subscription.isEligibleForIntroOffer
     }
 
     func purchasePremium() async {

@@ -13,6 +13,10 @@ final class GameViewModel: ObservableObject {
     private var spawnMarkerTask: Task<Void, Never>?
     private var recordNoticeTask: Task<Void, Never>?
     private var isResolvingMove = false
+    /// The most recent swipe made while a move was still resolving. Buffering one pending
+    /// intent (instead of dropping it) lets fast back-to-back swipes flow: it fires the
+    /// instant the current move settles.
+    private var bufferedDirection: SwipeDirection?
     private var agentWatcher: AgentSignalWatcher?
     private weak var gameCenter: GameCenterService?
     private var runStartingBestScore = 0
@@ -77,11 +81,24 @@ final class GameViewModel: ObservableObject {
 
     func swipe(_ direction: SwipeDirection) {
         guard !isAgentPaused, !isSnoozed, !state.isGameOver else { return }
-        feedback.impact()
-        guard !isResolvingMove else { return }
+        // A move is still sliding or resolving: remember the latest intent rather than
+        // dropping it, so quick consecutive swipes feel responsive. It replays the moment
+        // the current move settles (see `consumeBufferedSwipe`).
+        guard !isResolvingMove, state.activeMove == nil else {
+            bufferedDirection = direction
+            return
+        }
         guard GameEngine.startMove(direction, in: &state) else { return }
+        feedback.impact()
         store.save(state)
         scheduleMoveCompletion(after: state.activeMove?.duration ?? GameEngine.slideDuration)
+    }
+
+    /// Replays the swipe a player queued while the previous move was animating.
+    private func consumeBufferedSwipe() {
+        guard let direction = bufferedDirection else { return }
+        bufferedDirection = nil
+        swipe(direction)
     }
 
     func restart() {
@@ -89,6 +106,7 @@ final class GameViewModel: ObservableObject {
         cleanupTask?.cancel()
         spawnMarkerTask?.cancel()
         isResolvingMove = false
+        bufferedDirection = nil
         runStartingBestScore = state.bestScore
         announcedRecordMilestones = []
         recordNotice = nil
@@ -104,6 +122,7 @@ final class GameViewModel: ObservableObject {
         cleanupTask?.cancel()
         spawnMarkerTask?.cancel()
         isResolvingMove = false
+        bufferedDirection = nil
         didUseReviveThisRun = true
         GameEngine.revive(in: &state)
         store.save(state)
@@ -130,6 +149,7 @@ final class GameViewModel: ObservableObject {
     func handleAgentReadySignal() {
         lastAgentSignalAt = Date()
         guard !isAgentPaused else { return }
+        bufferedDirection = nil
         freezeActiveMoveIfNeeded()
         store.save(state)
         isAgentPaused = true
@@ -146,6 +166,7 @@ final class GameViewModel: ObservableObject {
     func snoozeFromAgentPause() {
         isAgentPaused = false
         isSnoozed = true
+        bufferedDirection = nil
         store.save(state)
     }
 
@@ -224,9 +245,9 @@ final class GameViewModel: ObservableObject {
         evaluateRecordNotice(previousScore: previousScore)
         if !outcome.clearedBlockIDs.isEmpty {
             feedback.clear()
-            spawnAfterDelay(0.16)
+            spawnAfterDelay(0.12)
         } else {
-            spawnAfterDelay(0.06)
+            spawnAfterDelay(0.05)
         }
         store.save(state)
     }
@@ -250,6 +271,7 @@ final class GameViewModel: ObservableObject {
                 self.isResolvingMove = false
                 self.store.save(self.state)
                 self.clearSpawnMarkersAfterDelay()
+                self.consumeBufferedSwipe()
             }
         }
     }
@@ -368,7 +390,7 @@ final class GameViewModel: ObservableObject {
     private func clearSpawnMarkersAfterDelay() {
         spawnMarkerTask?.cancel()
         spawnMarkerTask = Task { [weak self] in
-            try? await Task.sleep(nanoseconds: 280_000_000)
+            try? await Task.sleep(nanoseconds: 240_000_000)
             await MainActor.run {
                 guard let self else { return }
                 self.state.spawningBlockIDs = []

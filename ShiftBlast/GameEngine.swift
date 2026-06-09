@@ -11,7 +11,7 @@ struct MoveOutcome: Equatable {
 enum GameEngine {
     static let defaultBoardSize = 8
     static let initialEmptyCellRange = 22..<34
-    static let slideDuration: TimeInterval = 0.24
+    static let slideDuration: TimeInterval = 0.18
     static let scorePerLine = 400
     static let overdriveThreshold = 90
     static let maxPulse = 100
@@ -271,21 +271,6 @@ enum GameEngine {
         return max(1, 1 + max(scoreTier, moveTier))
     }
 
-    static func incomingBlockPreview(forTier tier: Int) -> String {
-        switch tier {
-        case 1:
-            return "2"
-        case 2:
-            return "2-3"
-        case 3:
-            return "3-4"
-        case 4:
-            return "4"
-        default:
-            return tier.isMultiple(of: 3) ? "4-5" : "4"
-        }
-    }
-
     static func incomingBlockPreview(forXP xp: Double) -> String {
         let range = incomingBlockRange(forXP: xp)
         if range.lowerBound == range.upperBound {
@@ -356,22 +341,6 @@ enum GameEngine {
     static func chainBonus(forChain chain: Int, difficulty: Double) -> Int {
         let perChain = max(30, 90 - Int((difficulty - 1) * 8))
         return max(0, chain - 1) * perChain
-    }
-
-    static func incomingBlockCount(forTier tier: Int, rng: inout SeededGenerator) -> Int {
-        switch tier {
-        case 1:
-            return 2
-        case 2:
-            return rng.nextBool(probability: 0.7) ? 2 : 3
-        case 3:
-            return rng.nextBool(probability: 0.45) ? 4 : 3
-        case 4:
-            return 4
-        default:
-            let extraProbability = min(0.45, 0.1 + Double(tier - 5) * 0.03)
-            return rng.nextBool(probability: extraProbability) ? 5 : 4
-        }
     }
 
     static func incomingBlockCount(forXP xp: Double, rng: inout SeededGenerator) -> Int {

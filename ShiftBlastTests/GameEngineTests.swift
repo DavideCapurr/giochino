@@ -170,7 +170,9 @@ final class GameEngineTests: XCTestCase {
         var blocks = (0..<7).map {
             GameBlock(position: GridPoint(row: 0, column: $0), tone: .cyan)
         }
-        blocks += (0..<7).map {
+        // Start at row 1: (0,2) is already placed by the row-0 fill above, so re-adding it
+        // here would stack two blocks on one cell and make row 0 falsely count as complete.
+        blocks += (1..<7).map {
             GameBlock(position: GridPoint(row: $0, column: 2), tone: .pink)
         }
         var state = fixture(blocks: blocks, seed: 12)

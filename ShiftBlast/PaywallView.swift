@@ -23,6 +23,7 @@ struct PaywallView: View {
             .padding(24)
         }
         .background(Color(red: 0.035, green: 0.038, blue: 0.05).ignoresSafeArea())
+        .onAppear { subscriptionStore.clearError() }
         .onChange(of: subscriptionStore.removesAds) { _, removesAds in
             if removesAds { dismiss() }
         }
@@ -88,7 +89,9 @@ struct PaywallView: View {
                     .font(.system(size: 14, weight: .bold, design: .rounded))
                     .foregroundStyle(.white.opacity(0.55))
 
-                Text("3-day free trial for eligible new subscribers, then auto-renews monthly. Cancel anytime.")
+                Text(subscriptionStore.isEligibleForIntroOffer
+                     ? "3-day free trial for new subscribers, then auto-renews monthly. Cancel anytime."
+                     : "Auto-renews monthly. Cancel anytime.")
                     .font(.system(size: 12, weight: .semibold, design: .rounded))
                     .foregroundStyle(.white.opacity(0.4))
                     .multilineTextAlignment(.center)
@@ -316,7 +319,7 @@ struct PaywallView: View {
             return "Subscribing..."
         default:
             if subscriptionStore.premiumProduct != nil {
-                return "Start Free Trial"
+                return subscriptionStore.isEligibleForIntroOffer ? "Start Free Trial" : "Subscribe"
             }
             return "Subscribe"
         }

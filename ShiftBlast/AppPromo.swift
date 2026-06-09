@@ -22,12 +22,6 @@ enum AppPromo {
         return landingURL
     }
 
-    /// Deep link that opens the App Store review composer, when the ID is configured.
-    static var writeReviewURL: URL? {
-        guard let appStoreID else { return nil }
-        return URL(string: "https://apps.apple.com/app/id\(appStoreID)?action=write-review")
-    }
-
     /// Shareable, brag-worthy message for a finished run.
     static func shareMessage(score: Int, bestScore: Int) -> String {
         let isBest = score > 0 && score >= bestScore

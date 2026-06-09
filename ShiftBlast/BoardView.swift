@@ -24,9 +24,9 @@ struct BoardView: View {
                             .opacity(opacity(forClearing: isClearing, spawning: isSpawning, now: timeline.date))
                             .scaleEffect(scale(forClearing: isClearing, spawning: isSpawning, now: timeline.date))
                             .position(position(for: block, now: timeline.date, gap: gap, cell: cell, padding: boardPadding))
-                            .animation(.spring(response: 0.24, dampingFraction: 0.8), value: block.position)
-                            .animation(.easeOut(duration: 0.2), value: isClearing)
-                            .animation(.spring(response: 0.32, dampingFraction: 0.68), value: isSpawning)
+                            .animation(.spring(response: 0.2, dampingFraction: 0.82), value: block.position)
+                            .animation(.easeOut(duration: 0.18), value: isClearing)
+                            .animation(.spring(response: 0.28, dampingFraction: 0.7), value: isSpawning)
                     }
                 }
                 .frame(width: proxy.size.width, height: proxy.size.width)

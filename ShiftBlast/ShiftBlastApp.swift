@@ -1,4 +1,5 @@
 import SwiftUI
+import UserNotifications
 
 @main
 struct ShiftBlastApp: App {
@@ -12,6 +13,7 @@ struct ShiftBlastApp: App {
             ContentView(viewModel: viewModel)
                 .environmentObject(subscriptionStore)
                 .environmentObject(gameCenter)
+                .tint(Color.shiftCyan)
                 .task {
                     await subscriptionStore.configure()
                     // Sync explicitly after entitlements resolve: onChange only
@@ -27,9 +29,14 @@ struct ShiftBlastApp: App {
                 .onChange(of: scenePhase) { _, phase in
                     if phase != .active {
                         viewModel.persistForInterruption()
-                    } else if !viewModel.isAgentPaused {
-                        viewModel.resumeInterruptedMoveIfNeeded()
-                        Task { await gameCenter.refreshAll() }
+                    } else {
+                        // Clear any lingering notification badge (e.g. a friend-overtake alert)
+                        // now that the player is back in the app.
+                        Task { try? await UNUserNotificationCenter.current().setBadgeCount(0) }
+                        if !viewModel.isAgentPaused {
+                            viewModel.resumeInterruptedMoveIfNeeded()
+                            Task { await gameCenter.refreshAll() }
+                        }
                     }
                 }
         }

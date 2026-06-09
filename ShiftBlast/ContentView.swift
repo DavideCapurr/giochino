@@ -6,7 +6,7 @@ struct ContentView: View {
     @EnvironmentObject var gameCenter: GameCenterService
     @Environment(\.requestReview) private var requestReview
     @State private var isPaywallPresented = false
-    @State private var isSettingsPresented = false
+    @State private var isSettingsPresented = ProcessInfo.processInfo.arguments.contains("-uiPreviewSettings")
     @State private var isContinuing = false
 
     private let fullScreenAds = FullScreenAdCoordinator.shared
@@ -18,6 +18,8 @@ struct ContentView: View {
             ZStack {
                 Color.black
                     .ignoresSafeArea()
+
+                StarField()
 
                 VStack(spacing: 0) {
                     VStack(spacing: 10) {
@@ -191,11 +193,15 @@ struct ContentView: View {
     }
 
     private var swipeGesture: some Gesture {
-        DragGesture(minimumDistance: 18)
+        DragGesture(minimumDistance: 14)
             .onEnded { value in
+                // Settings is an in-ZStack overlay (not a sheet), so the root drag gesture
+                // is still live behind it — ignore swipes while it's open or the board would
+                // move underneath the panel.
+                guard !isSettingsPresented else { return }
                 let width = value.translation.width
                 let height = value.translation.height
-                guard max(abs(width), abs(height)) > 18 else { return }
+                guard max(abs(width), abs(height)) > 14 else { return }
 
                 if abs(width) > abs(height) {
                     viewModel.swipe(width > 0 ? .right : .left)
@@ -895,9 +901,9 @@ private struct GameCenterBestRow: View {
 
     private var bestText: String {
         if let best = gameCenter.personalBest {
-            return "\(best)"
+            return best.formatted()
         }
-        return fallbackScore > 0 ? "\(fallbackScore)" : "--"
+        return fallbackScore > 0 ? fallbackScore.formatted() : "--"
     }
 }
 
@@ -1128,6 +1134,8 @@ private struct GameOverView: View {
             Color.black.opacity(0.72)
                 .ignoresSafeArea()
 
+            GeometryReader { proxy in
+                ScrollView {
             VStack(spacing: 16) {
                 Text("GAME OVER")
                     .font(.system(size: 14, weight: .black, design: .rounded))
@@ -1136,10 +1144,12 @@ private struct GameOverView: View {
                     .font(.system(size: 58, weight: .black, design: .rounded))
                     .foregroundStyle(Color.shiftCyan)
                     .monospacedDigit()
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.5)
 
                 HStack(spacing: 8) {
-                    StatPill(title: "BEST", value: "\(bestScore)", tint: .shiftYellow)
-                    StatPill(title: "MOVES", value: "\(moves)", tint: .shiftPink)
+                    StatPill(title: "BEST", value: bestScore.formatted(), tint: .shiftYellow)
+                    StatPill(title: "MOVES", value: moves.formatted(), tint: .shiftPink)
                 }
 
                 LeaderboardPanel(
@@ -1172,6 +1182,11 @@ private struct GameOverView: View {
                     .stroke(Color.white.opacity(0.12), lineWidth: 1)
             )
             .padding(.horizontal, 18)
+            .padding(.vertical, 24)
+            .frame(maxWidth: .infinity, minHeight: proxy.size.height)
+                }
+                .scrollBounceBehavior(.basedOnSize)
+            }
         }
     }
 
@@ -1260,10 +1275,10 @@ private struct AgentPauseOverlay: View {
                 }
 
                 VStack(spacing: 6) {
-                    Text("Distratto?")
+                    Text("Distracted?")
                         .font(.system(size: 30, weight: .black, design: .rounded))
                         .foregroundStyle(.white)
-                    Text("L'agente AI ha finito.\nIl tuo lavoro ti aspetta.")
+                    Text("Your AI agent is done.\nYour work is waiting.")
                         .font(.system(size: 13, weight: .bold, design: .rounded))
                         .foregroundStyle(.white.opacity(0.6))
                         .multilineTextAlignment(.center)
@@ -1273,10 +1288,10 @@ private struct AgentPauseOverlay: View {
                 VStack(spacing: 10) {
                     Button(action: backToWork) {
                         VStack(spacing: 2) {
-                            Text("TORNO AL LAVORO")
+                            Text("BACK TO WORK")
                                 .font(.system(size: 15, weight: .black, design: .rounded))
                                 .foregroundStyle(.black)
-                            Text("La sana scelta")
+                            Text("The healthy choice")
                                 .font(.system(size: 10, weight: .bold, design: .rounded))
                                 .foregroundStyle(.black.opacity(0.55))
                         }
@@ -1292,10 +1307,10 @@ private struct AgentPauseOverlay: View {
 
                     Button(action: procrastinate) {
                         VStack(spacing: 2) {
-                            Text("PROCRASTINO")
+                            Text("PROCRASTINATE")
                                 .font(.system(size: 14, weight: .black, design: .rounded))
                                 .foregroundStyle(Color.shiftPink)
-                            Text("Ancora una mossa")
+                            Text("One more move")
                                 .font(.system(size: 10, weight: .bold, design: .rounded))
                                 .foregroundStyle(.white.opacity(0.4))
                         }
@@ -1344,11 +1359,11 @@ private struct SnoozeCurtain: View {
                     .font(.system(size: 32, weight: .light))
                     .foregroundStyle(Color.nightPurpleMid)
 
-                Text("Buon lavoro.")
+                Text("Get to work.")
                     .font(.system(size: 22, weight: .black, design: .rounded))
                     .foregroundStyle(.white.opacity(0.85))
 
-                Text("Tap per riprendere quando vuoi.")
+                Text("Tap to resume whenever you want.")
                     .font(.system(size: 12, weight: .bold, design: .rounded))
                     .foregroundStyle(.white.opacity(0.4))
             }
