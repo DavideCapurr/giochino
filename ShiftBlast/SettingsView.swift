@@ -14,6 +14,7 @@ struct SettingsView: View {
     @State private var isLeaderboardPresented = false
 
     var body: some View {
+<<<<<<< ours
         GeometryReader { proxy in
             ZStack {
                 Color.black.opacity(0.84)
@@ -23,6 +24,21 @@ struct SettingsView: View {
                 panel
                     .frame(maxWidth: 400)
                     .frame(maxHeight: proxy.size.height - 44)
+=======
+        ZStack {
+            Color.black.opacity(0.45)
+                .ignoresSafeArea()
+                .onTapGesture { dismiss() }
+
+            VStack(spacing: 0) {
+                Spacer()
+                panelContent
+                    .padding(18)
+                    .frame(maxWidth: 380)
+                    .glassPanel(cornerRadius: 22, tint: .shiftCyan)
+                    .padding(.horizontal, 16)
+                Spacer()
+>>>>>>> theirs
             }
             .frame(width: proxy.size.width, height: proxy.size.height)
         }
@@ -276,7 +292,32 @@ struct SettingsView: View {
                 .tracking(1.5)
                 .padding(.leading, 4)
 
+<<<<<<< ours
             VStack(spacing: 0) {
+=======
+    private var premiumSection: some View {
+        VStack(spacing: 10) {
+            if subscriptionStore.isPremium {
+                SettingsRow(
+                    icon: "crown.fill",
+                    iconTint: .shiftYellow,
+                    title: "PREMIUM",
+                    subtitle: "Active"
+                ) {
+                    Button {
+                        openURL(URL(string: "https://apps.apple.com/account/subscriptions")!)
+                    } label: {
+                        Text("MANAGE")
+                            .font(.system(size: 11, weight: .black, design: .rounded))
+                            .foregroundStyle(.white.opacity(0.6))
+                            .padding(.horizontal, 10)
+                            .padding(.vertical, 6)
+                            .background(.ultraThinMaterial, in: Capsule())
+            .overlay(Capsule().stroke(Color.white.opacity(0.3), lineWidth: 0.6))
+                    }
+                }
+            } else {
+>>>>>>> theirs
                 SettingsRow(
                     icon: "cpu",
                     iconTint: aiConnectionTint,
@@ -356,7 +397,12 @@ struct SettingsView: View {
                         .foregroundStyle(Color.shiftPink)
                         .padding(.horizontal, 11)
                         .padding(.vertical, 6)
+<<<<<<< ours
                         .background(Color.shiftPink.opacity(0.14), in: Capsule())
+=======
+                        .background(.ultraThinMaterial, in: Capsule())
+                        .overlay(Capsule().stroke(Color.shiftPink.opacity(0.45), lineWidth: 0.7))
+>>>>>>> theirs
                 }
                 .alert("Restart game?", isPresented: $showRestartConfirm) {
                     Button("Cancel", role: .cancel) {}
@@ -437,7 +483,8 @@ struct SettingsView: View {
             .foregroundStyle(.white.opacity(0.6))
             .padding(.horizontal, 11)
             .padding(.vertical, 6)
-            .background(Color.white.opacity(0.08), in: Capsule())
+            .background(.ultraThinMaterial, in: Capsule())
+            .overlay(Capsule().stroke(Color.white.opacity(0.3), lineWidth: 0.6))
     }
 
     private func solidChip(_ text: String, tint: Color) -> some View {

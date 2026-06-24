@@ -3,8 +3,9 @@
 **A puzzle game that pings you the moment your AI agent finishes.**
 
 You kick off a long Claude Code task, then start procrastinating. ShiftBlast is
-the game you procrastinate *in* — and the instant Claude Code finishes (via a
-`Stop` / `SubagentStop` hook), the game pauses and taps you on the shoulder:
+the game you procrastinate *in* — and the instant Claude Code finishes or needs
+your attention (via Claude Code hooks), the game pauses and taps you on the
+shoulder:
 
 > **Agent ready.** Your work is waiting. → *Back to work* / *One more move*
 
@@ -16,9 +17,11 @@ So you stay in flow instead of context-switching to babysit a terminal.
 Claude Code finishes ─▶ plugin hook ─▶ iCloud sentinel ─▶ iPhone game pauses ─▶ you get back to work
 ```
 
-- A tiny **Claude Code plugin** (`shiftblast-alert`) fires on Stop/SubagentStop.
-- It writes a sentinel file into the ShiftBlast iCloud container.
+- A tiny **Claude Code plugin** (`shiftblast-alert`) fires on Claude Code
+  finish/attention hooks.
+- It writes a sentinel file directly into the ShiftBlast iCloud container.
 - The **iOS game** watches that file and pauses the moment your agent is done.
+- No separate ShiftBlast Relay install is required.
 
 ## Install the Claude Code plugin
 
@@ -35,8 +38,8 @@ Restart Claude Code, then test the link:
 /shiftblast-test
 ```
 
-Pair it with the **ShiftBlast iPhone app** (the app shows the pairing step), and
-you're set.
+Open the **ShiftBlast iPhone app** with Premium enabled, make sure the Mac and
+iPhone use the same iCloud account with iCloud Drive on, and you're set.
 
 ## Why it's built this way
 
@@ -50,7 +53,7 @@ removes ads.
 | Path | What |
 |------|------|
 | `ShiftBlast/` | iOS app (SwiftUI) |
-| `ShiftBlastRelay/` | macOS relay helper (writes the sentinel) |
+| `ShiftBlastRelay/` | optional legacy macOS helper for non-Claude agents |
 | `claude-marketplace/` | the `shiftblast-alert` Claude Code plugin |
 | `docs/` | landing page + privacy/terms (GitHub Pages) + strategy notes |
 

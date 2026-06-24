@@ -1,7 +1,8 @@
 # ShiftBlast Claude Code Plugin
 
-`shiftblast-alert` notifies the ShiftBlast iPhone game the moment Claude Code
-finishes a response, so you stop procrastinating and get back to work.
+`shiftblast-alert` notifies the ShiftBlast iPhone game directly through iCloud
+the moment Claude Code finishes or needs your attention, so you stop
+procrastinating and get back to work. No ShiftBlast Relay install is required.
 
 ## Install (public — anyone can run this)
 
@@ -25,4 +26,13 @@ Test:
 /shiftblast-test
 ```
 
-The plugin uses the Claude Code `Stop` and `SubagentStop` hooks. It first calls `~/.shiftblast/bin/shiftblast done` if the Relay helper is installed. If not, it writes directly to the ShiftBlast iCloud sentinel using the pairing file created by the iPhone app.
+The plugin uses the Claude Code `Stop`, `SubagentStop`, `Notification`, and
+`StopFailure` hooks. Each hook writes `agent-stop.flag` directly into the
+ShiftBlast iCloud container:
+
+```text
+~/Library/Mobile Documents/iCloud~com~davide~shiftblast/Documents/agent-stop.flag
+```
+
+Requirements: iCloud Drive enabled on the Mac, the same iCloud account on the
+iPhone, and ShiftBlast Premium enabled in the iPhone app.

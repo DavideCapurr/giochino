@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 #
-# diagnose-relay.sh — run on the Mac to check every precondition the relay
-# needs to reach the iOS app, and pinpoint exactly what's wrong if the link
-# isn't working. Read-only except for an optional write probe.
+# diagnose-relay.sh — run on the Mac to check every precondition the ShiftBlast
+# iCloud bridge needs to reach the iOS app, and pinpoint exactly what's wrong if
+# the link isn't working. Read-only except for an optional write probe.
 #
 # Usage:
 #   scripts/diagnose-relay.sh            # checks only
@@ -21,7 +21,7 @@ warn() { printf '  ⚠️  %s\n' "$1"; }
 fail() { printf '  ❌ %s\n' "$1"; FAILED=1; }
 FAILED=0
 
-echo "ShiftBlast relay ⇆ iOS — diagnostica (Mac)"
+echo "ShiftBlast iCloud bridge ⇆ iOS — diagnostica (Mac)"
 echo
 
 echo "iCloud Drive"
@@ -37,10 +37,10 @@ if [ -d "$CONTAINER_ROOT" ]; then
   if [ -d "$DOCS" ]; then
     pass "cartella Documents presente"
   else
-    warn "Documents non ancora creata — verrà creata al primo invio del relay"
+    warn "Documents non ancora creata — verrà creata al primo invio del plugin"
   fi
 else
-  warn "container non ancora provisionato: avvia il relay (o l'app iOS) almeno una volta da loggato in iCloud"
+  warn "container non ancora provisionato: avvia l'app iOS o invia un test dal plugin da loggato in iCloud"
 fi
 
 echo "Sentinella"
@@ -57,14 +57,14 @@ if [ -f "$SENTINEL" ]; then
     warn "rimedio: rm -f \"$SENTINEL\"  poi rilancia send-test-sentinel.sh (la versione corrente si auto-cura)."
   fi
 else
-  warn "nessuna sentinella ancora: usa 'Invia segnale di test' nel relay o scripts/send-test-sentinel.sh"
+  warn "nessuna sentinella ancora: usa /shiftblast-test in Claude Code o scripts/send-test-sentinel.sh"
 fi
 
-echo "Relay in esecuzione"
+echo "Relay opzionale in esecuzione"
 if pgrep -x "ShiftBlastRelay" >/dev/null 2>&1; then
   pass "processo ShiftBlastRelay attivo"
 else
-  warn "ShiftBlastRelay non in esecuzione"
+  warn "ShiftBlastRelay non in esecuzione (ok: non serve per il plugin Claude Code)"
 fi
 
 if [ "$PROBE" = "1" ]; then

@@ -1,75 +1,132 @@
 # ShiftBlast — Growth (getting users)
 
-**The bottleneck is users, not revenue-per-user.** With a handful of users —
-mostly acquaintances — ad income will always be a few cents, because ads only
-pay at thousands-of-users scale. So this is a user-acquisition plan, and it's
-built around what the app *actually is*.
+**The bottleneck is users, not revenue-per-user.** With a small user base, ads
+will only produce cents. The first goal is simple: get more people to try the
+game, understand whether they keep playing, and use that signal before spending
+more.
 
-## Know your real audience
+## Positioning
 
-ShiftBlast looks like a casual block puzzle, but its one differentiated,
-pay-worthy feature is the **Claude Code agent alert**: it pings you the moment
-your AI agent finishes. That means the audience is **developers who use Claude
-Code**, not generic mobile-game players.
+Promote ShiftBlast as a **second-screen neon block puzzle**:
 
-This single fact rewrites the growth plan: **do not chase casual-game App Store
-keywords.** Go where Claude Code users already are, and let the plugin do the
-acquiring.
+- swipe blocks across the board
+- clear rows and columns
+- trigger combos and overdrive
+- chase high scores
+- compete on Game Center
 
-## The plugin is the funnel (highest-leverage lever)
+The emotional use case is simple: people are watching TV, waiting, or
+half-paying attention, and they catch themselves about to scroll for no reason.
+ShiftBlast should feel like a better second-screen habit: something just as easy
+to pick up as scrolling, but more tactile and satisfying. A fidget toy with
+scores: low-pressure, quick to start, and satisfying even when played casually.
 
-Every developer who installs the `shiftblast-alert` plugin is a *qualified*
-lead: they have the exact pain point and they've already opted in. Make that
-path frictionless and discoverable:
+Do not lead with Claude Code, agents, plugins, or productivity. Those features
+can remain for power users, but the public acquisition message should be the
+game itself: quick, satisfying, low-attention puzzle play.
 
-1. **One-command public install** (done in this repo): anyone can run
-   ```text
-   /plugin marketplace add davidecapurr/giochino
-   /plugin install shiftblast-alert@shiftblast
-   ```
-   because there's now a `.claude-plugin/marketplace.json` at the repo root.
-2. **Get listed where developers look for plugins:**
-   - Open a PR to the **`hesreallyhim/awesome-claude-code`** list (and similar
-     "awesome-claude-code" / plugin-directory repos).
-   - Submit to any community Claude Code plugin directories.
-3. **Make the GitHub repo convert:** the README now leads with the hook and the
-   install command, so repo visitors become users.
+## The Main Asset
 
-## Where to post (pick 1–2, do them weekly)
+The best ad is a short gameplay clip. Record a 10-15 second screen capture:
 
-These reach Claude Code / AI-dev users directly — far better fit than casual
-gaming channels:
+1. Show one clean block slide.
+2. Clear a row or column.
+3. Trigger a combo or overdrive moment.
+4. Show the score jumping.
+5. End on the App Store link or app name.
 
-- **r/ClaudeAI** and **r/ClaudeCode** — a short clip + honest "I built this"
-  post. (Read each sub's self-promo rules.)
-- **Anthropic / Claude Developers Discord** — #show-and-tell / #plugins.
-- **X/Twitter** — the AI-coding crowd. A 15-second screen recording: agent
-  finishes → phone game pauses → "back to work." That demo *is* the pitch.
-- **Show HN** — "Show HN: A puzzle game that pings you when Claude Code is done."
-- **Dev newsletters / link roundups** (TLDR, Console.dev, etc.) — submit it.
+Use the same clip everywhere first. Do not overproduce it. For casual games,
+the viewer should understand the loop in the first 2 seconds.
 
-The demo video is the single best asset: it explains the product in one loop.
-Record it once, reuse it everywhere above.
+Test two creative angles:
 
-## Monetize the audience you have (since it's small)
+- **Satisfying clear:** make the game look tactile and instantly understandable.
+- **Second-screen habit:** "A little puzzle for when you are watching something
+  and your hands need something to do."
+- **Instead of scrolling:** "When the TV is on and you are about to scroll for
+  no reason, play one light puzzle run instead."
 
-With a small, technical audience, the money is in **direct purchases**, not ads:
-- Developers convert better on a **one-time purchase** than a subscription, and
-  friends who want to support you prefer paying once. Consider a one-time
-  "lifetime Premium" alongside the monthly. (~10 buyers × €9.99 ≈ €100.)
-- Keep ads on for free players (free upside), but treat **Premium** — the agent
-  alert — as the real product, and sell *that* on the paywall and landing page.
+## Video Production: You vs MCP/AI
 
-## Secondary: App Store presence
+Use a **you-first, MCP-assisted** workflow.
 
-Still worth doing, but secondary for this audience:
-- Title/subtitle should mention the hook (e.g. "AI agent alerts"), not just
-  "block puzzle," so the few people who search find the actual differentiator.
-- First two screenshots: show the **"Agent ready — back to work"** pause. That's
-  what makes a developer stop scrolling.
+The core creative should be real gameplay recorded by you. This is especially
+important for App Store preview videos, where the video should show the app's
+features, UI, and gameplay using footage captured on device. It also matters for
+trust: generic AI-made game ads often feel fake, while a real board clear,
+combo, and score jump tells people exactly what they are downloading.
 
-## Honest expectations
+Use MCP/AI to multiply and polish the asset:
 
-The plugin funnel + a reusable demo clip + a couple of community posts is the
-realistic path from "friends only" to a real user base. Budget ~2–3 hours/week
-of posting; for a solo dev it's the highest-ROI unpaid work available.
+- **You record:** raw gameplay clips, preferably 5-10 attempts.
+- **Codex/Claude help:** choose hooks, write captions, generate post variants,
+  and create testing checklists.
+- **Canva or video/design MCP help:** crop to 9:16, add safe-zone text overlays,
+  make end cards, thumbnails, and alternate caption versions.
+- **You approve:** only publish videos that show real ShiftBlast gameplay and
+  do not overpromise what the game does.
+
+The first week should not depend on a fully AI-generated promo. Start with one
+honest gameplay clip, then use MCPs to produce variants quickly.
+
+## Where To Post
+
+Start with free or very cheap channels:
+
+- **TikTok / Reels / Shorts** — satisfying gameplay clips, no explanation.
+- **X / Twitter** — short clip plus "I made a low-attention block puzzle for
+  iPhone."
+- **Reddit** — only where self-promo is allowed; focus on indie dev or mobile
+  game communities, not Claude communities.
+- **Friends / warm network** — ask them to download, play one run, rate if they
+  enjoy it, and share their score.
+
+Avoid spending time on long technical posts for the first push. The game must
+convert visually.
+
+## Paid Test
+
+Use a tiny Apple Search Ads test only after the App Store page has strong
+screenshots and a good first video/screenshot. Keep it small:
+
+- Budget: 5-10 EUR/day for 3-5 days.
+- Keywords: block puzzle, puzzle game, slide puzzle, brain puzzle, casual game.
+- Goal: learn cost per download and App Store conversion, not scale yet.
+
+Stop quickly if cost per download is too high or retention is weak.
+
+## App Store Page
+
+The page should sell the game in the first screen:
+
+- First screenshot: clean gameplay with a satisfying clear.
+- Second screenshot: combo or overdrive.
+- Third screenshot: leaderboard / high score chase.
+- Subtitle: short, direct, game-first.
+- Promo text: emphasize fast rounds, satisfying clears, and casual one-more-run
+  play as an alternative to random scrolling.
+
+Do not make the first screenshot about agent notifications if the campaign is
+for general players.
+
+## Metrics To Watch
+
+After each promotion push, check App Store Connect:
+
+- Product page views
+- Downloads
+- Conversion rate
+- Source / campaign
+- Retention
+- Ratings
+- IAP purchases
+
+For the first phase, a good sign is not revenue. A good sign is that strangers
+download, play, and come back.
+
+## Honest Expectations
+
+Generic puzzle games are competitive. The path is not one big launch; it is many
+small clips, better screenshots, a low-budget ad test, and iteration based on
+real conversion. Spend the first week proving that the gameplay clip can get
+strangers to install.

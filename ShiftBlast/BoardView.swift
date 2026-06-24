@@ -36,12 +36,20 @@ struct BoardView: View {
     }
 
     @ViewBuilder private var boardBackground: some View {
-        let shape = RoundedRectangle(cornerRadius: 16, style: .continuous)
+        let shape = RoundedRectangle(cornerRadius: 22, style: .continuous)
         shape
-            .fill(Color.nightBoardBg.opacity(0.6))
-            .overlay(shape.stroke(Color.nightBoardBorder.opacity(0.5), lineWidth: 1))
-            .shadow(color: Color.nightBoardBorder.opacity(0.15), radius: 1)
-            .shadow(color: Color(red: 0.03, green: 0.04, blue: 0.14).opacity(0.8), radius: 60, x: 0, y: 20)
+            .fill(.ultraThinMaterial)
+            .overlay {
+                LinearGradient(
+                    colors: [Color.shiftCyan.opacity(0.2), Color.shiftViolet.opacity(0.12), .clear],
+                    startPoint: .topLeading,
+                    endPoint: .bottomTrailing
+                )
+                .clipShape(shape)
+            }
+            .overlay(shape.stroke(Color.white.opacity(0.3), lineWidth: 0.9))
+            .shadow(color: Color.shiftCyan.opacity(0.22), radius: 18)
+            .shadow(color: Color.shiftViolet.opacity(0.18), radius: 28, y: 18)
     }
 
     private func position(for block: GameBlock, now: Date, gap: CGFloat, cell: CGFloat, padding: CGFloat) -> CGPoint {
@@ -86,11 +94,12 @@ private struct BoardGrid: View {
     private func gridCell(row: Int, column: Int) -> some View {
         let x: CGFloat = padding + cell / 2 + CGFloat(column) * (cell + gap)
         let y: CGFloat = padding + cell / 2 + CGFloat(row) * (cell + gap)
-        return RoundedRectangle(cornerRadius: 7, style: .continuous)
-            .fill(Color.nightCellBg.opacity(0.8))
+        return RoundedRectangle(cornerRadius: 8, style: .continuous)
+            .fill(Color.white.opacity(0.06))
+            .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 8, style: .continuous))
             .overlay(
-                RoundedRectangle(cornerRadius: 7, style: .continuous)
-                    .stroke(Color.nightCellBorder.opacity(0.4), lineWidth: 1)
+                RoundedRectangle(cornerRadius: 8, style: .continuous)
+                    .stroke(Color.white.opacity(0.18), lineWidth: 0.8)
             )
             .frame(width: cell, height: cell)
             .position(x: x, y: y)

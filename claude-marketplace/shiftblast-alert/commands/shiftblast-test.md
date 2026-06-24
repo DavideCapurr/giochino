@@ -9,4 +9,4 @@ Run the ShiftBlast notification script once:
 
 !`${CLAUDE_PLUGIN_ROOT}/scripts/notify-shiftblast.sh manual-test`
 
-Tell the user whether the command completed. If ShiftBlast is open on iPhone and paired, it should show AGENTE PRONTO.
+Tell the user whether the command completed. If ShiftBlast is open on iPhone with Premium enabled and the Mac and iPhone use the same iCloud account, it should show AGENTE PRONTO.

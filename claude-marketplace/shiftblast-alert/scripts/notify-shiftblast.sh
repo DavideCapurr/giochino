@@ -2,9 +2,8 @@
 set -u
 
 reason="${1:-claude-code}"
-helper="$HOME/.shiftblast/bin/shiftblast"
 docs="$HOME/Library/Mobile Documents/iCloud~com~davide~shiftblast/Documents"
-config="$docs/shiftblast-relay.json"
+sentinel="$docs/agent-stop.flag"
 log_dir="$HOME/Library/Logs/ShiftBlast"
 log_file="$log_dir/claude-plugin.log"
 
@@ -13,41 +12,39 @@ log() {
   printf '%s %s\n' "$(date -u '+%Y-%m-%dT%H:%M:%SZ')" "$*" >> "$log_file" 2>/dev/null || true
 }
 
-notify_with_helper() {
-  if [ -x "$helper" ]; then
-    "$helper" done >/dev/null 2>&1
-    return $?
-  fi
-  return 1
-}
-
-sentinel_from_config() {
-  if [ ! -f "$config" ]; then
-    return 1
-  fi
-
-  sed -n 's/.*"sentinelName"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p' "$config" | head -n 1
+json_escape() {
+  printf '%s' "$1" | sed 's/\\/\\\\/g; s/"/\\"/g'
 }
 
 notify_directly() {
-  sentinel_name="$(sentinel_from_config)"
-  if [ -z "${sentinel_name:-}" ]; then
+  if [ ! -d "$HOME/Library/Mobile Documents" ]; then
     return 1
   fi
 
-  mkdir -p "$docs"
-  printf '%s claude-code %s\n' "$(date -u '+%Y-%m-%dT%H:%M:%SZ')" "$reason" > "$docs/$sentinel_name"
+  mkdir -p "$docs" 2>/dev/null || return 1
+
+  sent_at="$(date -u '+%Y-%m-%dT%H:%M:%SZ' 2>/dev/null || echo unknown)"
+  escaped_reason="$(json_escape "$reason")"
+  tmp="$docs/.agent-stop.flag.tmp.$$"
+
+  if ! printf '{"reason":"%s","sentAt":"%s","source":"claude-code-plugin"}\n' "$escaped_reason" "$sent_at" > "$tmp" 2>/dev/null; then
+    rm -f "$tmp" 2>/dev/null || true
+    return 1
+  fi
+
+  rm -f "$sentinel" 2>/dev/null || true
+  if ! mv -f "$tmp" "$sentinel" 2>/dev/null; then
+    rm -f "$tmp" 2>/dev/null || true
+    return 1
+  fi
+
+  return 0
 }
 
-if notify_with_helper; then
-  log "notified via helper reason=$reason"
-  exit 0
-fi
-
 if notify_directly; then
-  log "notified directly reason=$reason"
+  log "notified via iCloud sentinel reason=$reason"
   exit 0
 fi
 
-log "notification skipped: no helper and no pairing config reason=$reason"
+log "notification skipped: iCloud Drive unavailable reason=$reason"
 exit 0

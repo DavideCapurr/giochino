@@ -1,139 +1,192 @@
 # ShiftBlast — Launch Kit
 
-Copy-paste-ready assets to acquire your first real users (Claude Code
-developers) and convert them into Lifetime Premium buyers. Everything here is
-written to be posted as-is; tweak the voice to sound like you.
+Copy-paste-ready assets to promote ShiftBlast as a second-screen mobile puzzle
+game: the thing you play instead of randomly scrolling while the TV is on. The
+goal is to get strangers to understand the gameplay fast, install, play one run,
+and come back whenever they want something simple to do with their phone.
 
-Target math: **~10 Lifetime Premium buyers × €9.99 ≈ €100.**
-
----
-
-## 0. The one asset everything depends on: the 15-second demo clip
-
-This single loop *is* the pitch. Record it once, reuse it in every post below.
-
-**Storyboard (screen recording, ~15s):**
-1. (0–3s) Split feel: terminal with Claude Code running a long task — "working…".
-2. (3–6s) Cut to iPhone: you're playing ShiftBlast, sliding blocks, a combo pops.
-3. (6–9s) Terminal finishes → the game **pauses** with the overlay:
-   *"Agent ready — your work is waiting."*
-4. (9–12s) Tap **Back to work**; cut back to the terminal with the result.
-5. (12–15s) End card: `ShiftBlast — play while your agent works.` + the install line.
-
-**Caption to burn in / pin:** "I kept procrastinating while Claude Code worked,
-so I built a game that pings me the second it's done."
-
-Export vertical (9:16) for TikTok/Reels/Shorts and landscape (16:9) for X/HN.
+Target for the first push: **100-300 qualified downloads** and enough App Store
+Connect data to see which channel converts.
 
 ---
 
-## 1. Reddit — r/ClaudeAI, r/ClaudeCode
+## 0. The One Asset Everything Depends On
+
+Record a 10-15 second gameplay clip. It should be satisfying before anyone reads
+the caption.
+
+**Storyboard:**
+1. (0-2s) Start on the board with a move already obvious.
+2. (2-5s) Swipe a block and clear a row or column.
+3. (5-8s) Chain into a combo or overdrive moment.
+4. (8-11s) Score jumps; show the board getting tense again.
+5. (11-15s) End card: `ShiftBlast` + `Free on iPhone` + App Store link.
+
+**Caption to burn in / pin:** `Instead of random scrolling.`
+
+Export vertical 9:16 for TikTok/Reels/Shorts and square or vertical for X.
+
+## 0.1. Should You Make The Video Yourself Or With MCP/AI?
+
+**Recommendation: make the core video yourself, then use MCP/AI only to package
+it.**
+
+For ShiftBlast, the asset that matters is real gameplay. Screen-record the game
+on your iPhone or Simulator, because the viewer needs to understand the actual
+loop: swipe, clear, combo, score. AI-generated video can make a nice background,
+but it cannot honestly show how the game feels.
+
+Use MCP/AI for the parts around the gameplay:
+
+- **You:** record 5-10 raw gameplay clips.
+- **Codex/Claude:** generate hooks, captions, post variants, and ad copy.
+- **Canva or a Canva-style MCP:** add text overlays, crop to 9:16, create end
+  cards, resize variants, and make thumbnail/post assets.
+- **CapCut/iMovie/Canva editor:** trim the gameplay to the strongest 10-15
+  seconds and export.
+
+Do **not** use AI video as the main App Store preview. Apple App Previews should
+demonstrate the app with footage captured on device, and they autoplay muted, so
+the first seconds need to be visually clear even without sound.
+
+### Practical Decision
+
+- **App Store preview:** you record real gameplay. MCP can help with text/end
+  card planning, but keep the footage real.
+- **TikTok/Reels/Shorts organic:** you record real gameplay. MCP can make 5-10
+  caption/overlay variants.
+- **Paid ads test:** start with real gameplay. Use MCP to produce three variants:
+  `satisfying clear`, `instead of scrolling`, and `combo/overdrive`.
+- **Founder/indie dev post:** optional. If you are comfortable, record yourself
+  for the first 1-2 seconds saying "I made a fast iPhone puzzle game"; otherwise
+  use text overlay and gameplay only.
+
+The first batch should be **you-first, MCP-assisted**, not MCP-generated.
+
+---
+
+## 1. X / Twitter
+
+**Post:**
+> I made a simple neon block puzzle for iPhone.
+>
+> It is the kind of game you play while the TV is on and you are about to scroll
+> for no reason: slide blocks, clear lines, chain combos, and chase your high
+> score without thinking too hard.
+>
+> Free on the App Store: https://apps.apple.com/app/id6767577147
+>
+> [gameplay clip]
+
+**Short variant:**
+> Built a little iPhone puzzle game: ShiftBlast.
+>
+> For when the show is on and you want something better than random scrolling.
+> Simple moves, satisfying clears, Game Center leaderboards.
+>
+> https://apps.apple.com/app/id6767577147
+>
+> [gameplay clip]
+
+---
+
+## 2. TikTok / Reels / Shorts
+
+Use the gameplay clip with minimal text.
+
+**Overlay options:**
+- `One more run.`
+- `That combo felt good.`
+- `A puzzle for idle hands.`
+- `While the show is on.`
+- `Instead of scrolling.`
+- `Can you beat this score?`
+
+**Caption options:**
+- `I made a simple block puzzle for when your hands need something to do.`
+- `For when the TV is on and you are about to scroll for no reason.`
+- `Swipe, clear, combo, repeat.`
+- `New puzzle game: ShiftBlast.`
+
+Avoid long explanations. The game has to sell itself visually.
+
+---
+
+## 3. Reddit / Indie Communities
+
+Only post where self-promo is allowed.
 
 **Title:**
-> I built a puzzle game that pauses and pings me the moment Claude Code finishes
+> I made a fast neon block puzzle for iPhone — feedback welcome
 
 **Body:**
-> I have a bad habit: I start a long Claude Code task, get bored waiting, and
-> wander off — then forget it finished 20 minutes ago.
+> I shipped **ShiftBlast**, a free iPhone block puzzle.
 >
-> So I made **ShiftBlast**: a fast block-slide puzzle for iPhone that's wired to
-> Claude Code. A tiny plugin fires on the `Stop` / `SubagentStop` hooks, and the
-> instant your agent is done, the game pauses and taps you on the shoulder:
-> *"Agent ready — back to work."* You stay in flow instead of babysitting a
-> terminal.
+> The loop is simple: slide blocks across the board, clear rows and columns,
+> chain combos, hit overdrive, and chase your best score on Game Center. It is
+> intentionally low-pressure: something satisfying to play while watching TV,
+> waiting, or catching yourself about to scroll for no reason.
 >
-> Plugin install is one command:
-> ```
-> /plugin marketplace add davidecapurr/giochino
-> /plugin install shiftblast-alert@shiftblast
-> ```
+> App Store: https://apps.apple.com/app/id6767577147
 >
-> [15s demo clip] — happy to answer anything about the hook setup.
-
-(Read each sub's self-promotion rules first; lead with the story, not the sale.)
+> [gameplay clip]
+>
+> I am especially looking for feedback on first-run feel, difficulty, and whether
+> the screenshots explain the game clearly.
 
 ---
 
-## 2. Show HN
+## 4. Friends / Warm Network
 
-**Title:**
-> Show HN: A puzzle game that pings you when Claude Code finishes
-
-**Text:**
-> I kept procrastinating while my AI agent worked, so I built ShiftBlast — an
-> iPhone puzzle that pauses the moment Claude Code is done (via the Stop /
-> SubagentStop hooks → an iCloud sentinel the app watches). The free game is a
-> block-slide puzzle; Premium unlocks the agent alert.
+**Message:**
+> I shipped my iPhone puzzle game, ShiftBlast.
 >
-> Plugin is open and installable in one command:
-> `/plugin marketplace add davidecapurr/giochino`
+> It is free: simple moves, quick rounds, satisfying clears, combos, and Game
+> Center scores. Basically something better to do than random scrolling while
+> the TV is on.
 >
-> Repo: https://github.com/davidecapurr/giochino — feedback welcome, especially
-> on the hook design.
+> Can you download it, play one run, and send me your score?
+>
+> https://apps.apple.com/app/id6767577147
+
+After they play, ask only people who genuinely enjoyed it to rate it.
 
 ---
 
-## 3. X / Twitter (thread)
+## 5. App Store Listing
 
-1/ I kept procrastinating while Claude Code worked, so I built a game that pings
-me the second it's done. 🎮⚡ [demo clip]
-
-2/ It's an iPhone block puzzle. A Claude Code plugin fires on Stop/SubagentStop →
-the game pauses → "Agent ready, back to work." You stay in flow.
-
-3/ One command to try the plugin:
-`/plugin marketplace add davidecapurr/giochino`
-`/plugin install shiftblast-alert@shiftblast`
-
-4/ Free to play. Lifetime Premium unlocks the agent alert + removes ads — one
-payment, no subscription. Links 👇
-
-(Tag the Claude + AI-coding community; reply to relevant "how do you avoid
-context-switching while agents run" threads with the clip.)
-
----
-
-## 4. awesome-claude-code PR
-
-Open a PR to `hesreallyhim/awesome-claude-code` (and similar plugin lists).
-
-**Entry:**
-> - **[shiftblast-alert](https://github.com/davidecapurr/giochino)** — Pings the
->   ShiftBlast iPhone game the moment Claude Code finishes (Stop / SubagentStop
->   hooks), so you stop procrastinating and get back to work.
-
-**PR description:**
-> Adds `shiftblast-alert`, a plugin that uses the Stop/SubagentStop hooks to
-> notify a companion iPhone game when a Claude Code run completes. Installable
-> via `/plugin marketplace add davidecapurr/giochino`. Repo includes the plugin
-> source under `claude-marketplace/`.
+- **App name (<=30):** `ShiftBlast`
+- **Subtitle (<=30):** `Simple neon block puzzle`
+- **Keywords (<=100, no spaces):**
+  `puzzle,block,slide,blocks,casual,arcade,combo,score,leaderboard,2048,logic,neon,relax`
+- **Promo text:**
+  `A simple puzzle for idle hands: play a quick run instead of random scrolling.`
+- **Description opening:**
+  > ShiftBlast is a simple neon block puzzle for quick, satisfying runs.
+  > Slide blocks across the board, clear rows and columns, chain combos, trigger
+  > overdrive, and climb the Game Center leaderboard.
+  >
+  > Play when you want something light to do with your phone: during a show,
+  > while waiting, or when you catch yourself scrolling for no reason.
+- **Screenshot order:**
+  1. Clean gameplay board with a clear about to happen.
+  2. Combo / overdrive moment.
+  3. Game over / high score chase.
+  4. Game Center leaderboard.
+  5. Remove ads / Premium, if you want to show monetization.
 
 ---
 
-## 5. App Store listing (optimized for the dev hook)
+## 6. Tiny Apple Search Ads Test
 
-- **App name (≤30):** `ShiftBlast: Agent Alert Puzzle`
-- **Subtitle (≤30):** `Play while your AI works`
-- **Keywords (≤100, no spaces):**
-  `claude,ai,agent,coding,developer,puzzle,block,slide,focus,flow,productivity,notify,hook,2048`
-- **Promo text:** `Get pinged the moment Claude Code finishes — and never lose
-  your flow again.`
-- **Description (first 2 lines are what's visible):**
-  > Start a long AI task, then play ShiftBlast. The instant your agent finishes,
-  > the game pauses and pulls you back to work. A fast block-slide puzzle that
-  > respects your focus — with Game Center leaderboards, combos, and overdrive.
-- **Screenshots:** #1 = the "Agent ready — back to work" pause overlay. #2 = a
-  big combo/overdrive moment. Captions: "Pings you when your agent is done" /
-  "Satisfying combos."
+Run only after the screenshots and first clip are solid.
 
----
+- Budget: 5-10 EUR/day.
+- Duration: 3-5 days.
+- Keywords: `block puzzle`, `puzzle game`, `slide puzzle`, `brain puzzle`,
+  `casual puzzle`.
+- Track: impressions, product page views, downloads, conversion rate, cost per
+  download.
 
-## 6. The direct ask (your warm network)
-
-You already have a few developer acquaintances. That's your first €100.
-
-> "I shipped that thing I was building — a puzzle that pings you when Claude Code
-> finishes. If it's useful, the Lifetime unlock is a one-time [price] and it
-> genuinely helps me keep building it. Here's the install + a 15s demo: [link]"
-
-Honest, specific, one payment. Ten yeses and the goal is met.
+The goal is learning, not scale. If the page does not convert, fix screenshots
+and video before increasing budget.

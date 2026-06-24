@@ -16,8 +16,7 @@ struct ContentView: View {
     var body: some View {
         GeometryReader { proxy in
             ZStack {
-                Color.black
-                    .ignoresSafeArea()
+                NeonGlassBackground()
 
                 StarField()
 
@@ -60,7 +59,7 @@ struct ContentView: View {
                         AdMobBannerView(width: proxy.size.width)
                             .frame(height: 60)
                             .frame(maxWidth: .infinity)
-                            .background(Color(red: 0.02, green: 0.02, blue: 0.03))
+                            .background(.ultraThinMaterial)
                     }
                 }
                 .padding(.bottom, showAd ? proxy.safeAreaInsets.bottom : 0)
@@ -258,19 +257,8 @@ private struct RecordToast: View {
         }
         .padding(.horizontal, 10)
         .padding(.vertical, 9)
-        .background(
-            LinearGradient(
-                colors: [tint.opacity(0.18), Color.white.opacity(0.055)],
-                startPoint: .leading,
-                endPoint: .trailing
-            ),
-            in: RoundedRectangle(cornerRadius: 8, style: .continuous)
-        )
-        .overlay(
-            RoundedRectangle(cornerRadius: 8, style: .continuous)
-                .stroke(tint.opacity(0.28), lineWidth: 1)
-        )
-        .shadow(color: tint.opacity(0.14), radius: 20, y: 8)
+        .glassPanel(cornerRadius: 12, tint: tint)
+        .background(Color.clear)
     }
 }
 
@@ -1423,4 +1411,70 @@ extension Color {
     static let nightPurpleDim = Color(red: 0.38, green: 0.38, blue: 0.54)
     // oklch(0.60 0.10 280) — mid muted purple for best score
     static let nightPurpleMid = Color(red: 0.47, green: 0.47, blue: 0.65)
+}
+
+
+import SwiftUI
+
+struct NeonGlassBackground: View {
+    var body: some View {
+        LinearGradient(
+            colors: [
+                Color(red: 0.03, green: 0.04, blue: 0.1),
+                Color(red: 0.06, green: 0.02, blue: 0.11),
+                Color(red: 0.01, green: 0.07, blue: 0.11)
+            ],
+            startPoint: .topLeading,
+            endPoint: .bottomTrailing
+        )
+        .overlay {
+            RadialGradient(
+                colors: [Color.shiftCyan.opacity(0.26), .clear],
+                center: .topLeading,
+                startRadius: 10,
+                endRadius: 350
+            )
+        }
+        .overlay {
+            RadialGradient(
+                colors: [Color.shiftPink.opacity(0.2), .clear],
+                center: .bottomTrailing,
+                startRadius: 20,
+                endRadius: 380
+            )
+        }
+        .ignoresSafeArea()
+    }
+}
+
+struct GlassPanel: ViewModifier {
+    var cornerRadius: CGFloat = 20
+    var tint: Color = .white
+
+    func body(content: Content) -> some View {
+        content
+            .background {
+                RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
+                    .fill(.ultraThinMaterial)
+                    .overlay {
+                        LinearGradient(
+                            colors: [tint.opacity(0.2), Color.white.opacity(0.05), .clear],
+                            startPoint: .topLeading,
+                            endPoint: .bottomTrailing
+                        )
+                        .clipShape(RoundedRectangle(cornerRadius: cornerRadius, style: .continuous))
+                    }
+            }
+            .overlay {
+                RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
+                    .strokeBorder(Color.white.opacity(0.26), lineWidth: 0.8)
+            }
+            .shadow(color: tint.opacity(0.24), radius: 18, y: 8)
+    }
+}
+
+extension View {
+    func glassPanel(cornerRadius: CGFloat = 20, tint: Color = .white) -> some View {
+        modifier(GlassPanel(cornerRadius: cornerRadius, tint: tint))
+    }
 }

@@ -7,7 +7,7 @@
     {
       "name": "shiftblast-alert",
       "source": "./shiftblast-alert",
-      "description": "Notify ShiftBlast when Claude Code finishes a response"
+      "description": "Notify ShiftBlast through iCloud when Claude Code finishes or needs attention"
     }
   ]
 }

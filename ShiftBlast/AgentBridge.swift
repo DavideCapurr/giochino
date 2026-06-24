@@ -1,8 +1,8 @@
 import Foundation
 
-/// iCloud-backed channel between the macOS relay (writer) and the iOS game
-/// (reader). The relay touches a single sentinel file in the app's ubiquity
-/// container; the game watches its mtime via `AgentSignalWatcher`.
+/// iCloud-backed channel between the Claude Code plugin (writer) and the iOS
+/// game (reader). The writer touches a single sentinel file in the app's
+/// ubiquity container; the game watches its mtime via `AgentSignalWatcher`.
 enum AgentBridgeICloud {
     static let appBundleIdentifier = "com.davide.shiftblast"
     static let iCloudContainerIdentifier = "iCloud.\(appBundleIdentifier)"

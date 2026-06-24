@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 #
-# send-test-sentinel.sh — write the ShiftBlast relay sentinel into the shared
+# send-test-sentinel.sh — write the ShiftBlast agent sentinel into the shared
 # iCloud container, so you can verify the iCloud → iOS pause path end to end
-# without running the relay or a real agent.
+# without running Claude Code or the optional legacy relay.
 #
 # Usage:
 #   scripts/send-test-sentinel.sh ["reason text"]

@@ -10,9 +10,10 @@ private let log = Logger(subsystem: "com.davide.shiftblast", category: "AgentSig
 /// polling fallback (which reports the file's modification date). Those two
 /// clocks rarely agree to the second, and — crucially — neither agrees with the
 /// iOS device's wall clock, because the file is produced by a *different*
-/// machine (the Mac relay). Comparing a change date against local wall time is
-/// therefore unsafe: if the Mac clock trails the iPhone clock by even a few
-/// seconds, every genuine signal looks "older than launch" and is dropped.
+/// machine (the Mac-side plugin or relay). Comparing a change date against
+/// local wall time is therefore unsafe: if the Mac clock trails the iPhone clock
+/// by even a few seconds, every genuine signal looks "older than launch" and is
+/// dropped.
 ///
 /// This tracker sidesteps that entirely. It never looks at wall time. The first
 /// observation from each source merely establishes a baseline (so a sentinel
@@ -55,13 +56,13 @@ struct SentinelChangeTracker {
 }
 
 /// Watches the shared sentinel file in the app's iCloud ubiquity container and
-/// fires `onSignal` on the main actor whenever its content changes. Producer is
-/// the macOS ShiftBlast Relay app.
+/// fires `onSignal` on the main actor whenever its content changes. Producers
+/// include the Claude Code plugin and the optional legacy macOS relay.
 ///
 /// Combines `NSMetadataQuery` (for ubiquitous-aware updates) with a 0.75s
 /// polling fallback (covers cases where iCloud has not yet downloaded the
 /// item). Both feed a single `SentinelChangeTracker`, which guarantees a real
-/// signal is never swallowed by clock skew between the Mac relay and this
+/// signal is never swallowed by clock skew between the Mac-side writer and this
 /// device, and that one write fires the game pause at most once.
 final class AgentSignalWatcher {
     static let sentinelName = "agent-stop.flag"

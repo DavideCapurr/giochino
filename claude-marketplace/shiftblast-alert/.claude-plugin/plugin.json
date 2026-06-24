@@ -1,6 +1,6 @@
 {
   "name": "shiftblast-alert",
-  "description": "Notify ShiftBlast on Claude Code Stop and SubagentStop events",
+  "description": "Notify ShiftBlast directly through iCloud when Claude Code needs attention or finishes",
   "version": "1.0.0",
   "author": {
     "name": "ShiftBlast"
